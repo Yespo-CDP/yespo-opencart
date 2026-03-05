@@ -1,6 +1,14 @@
 <?php
 class ControllerExtensionModuleYespo extends Controller {
 	private $error = [];
+	private $contacts_url = 'https://yespo.io/api/v1/contacts';
+	private $contact_url = 'https://yespo.io/api/v1/contact';
+	private $account_info_url = 'https://yespo.io/api/v1/account/info';
+	private $orders_url = 'https://yespo.io/api/v1/orders';
+	private $domains_url = 'https://yespo.io/api/v1/site/domains';
+	private $site_script_url = 'https://yespo.io/api/v1/site/script';
+	private $webpush_domain_url = 'https://yespo.io/api/v1/site/webpush/domain';
+	private $webpush_script_url = 'https://yespo.io/api/v1/site/webpush/script';
 	
 	public function index() {
 		$this->load->language('extension/module/yespo');
@@ -102,7 +110,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		
 		if ($this->request->server['REQUEST_METHOD'] == 'POST' && $api_key && $this->validate()) {
 			$current_api_key = $this->config->get('yespo_api_key');
-			$request = $this->model_extension_module_yespo->makeRequest([], 'https://esputnik.com/api/v1/account/info', 'GET', $api_key, true);
+			$request = $this->model_extension_module_yespo->makeRequest([], $this->account_info_url, 'GET', $api_key, true);
 			
 			if (!empty($request['orgId'])) {
 				$log_data = [
@@ -189,7 +197,7 @@ class ControllerExtensionModuleYespo extends Controller {
 					'channels'   => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]]
 				];
 				$this->load->model('extension/module/yespo');
-				$this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/contact');
+				$this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
 			}
 		}
 	}
@@ -209,7 +217,7 @@ class ControllerExtensionModuleYespo extends Controller {
 					'channels'   => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]]
 				];
 				$this->load->model('extension/module/yespo');
-				$this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/contact');
+				$this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
 			}
 		}
 	}
@@ -223,7 +231,7 @@ class ControllerExtensionModuleYespo extends Controller {
 				'erase'              => true
 			];
 			$this->load->model('extension/module/yespo');
-			$this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/contact', 'DELETE');
+			$this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url, 'DELETE');
 		}
 	}
 	
@@ -268,7 +276,7 @@ class ControllerExtensionModuleYespo extends Controller {
 				'dedupeOn'      => 'externalCustomerId'
 			];
 			
-			$response = $this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/contacts');
+			$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->contacts_url);
 			
 			$failed_count = 0;
 			if (isset($response['failedContacts']) && is_array($response['failedContacts'])) {
@@ -424,7 +432,7 @@ class ControllerExtensionModuleYespo extends Controller {
 				'orders' => $orders_payload
 			];
 
-			$response = $this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/orders');
+			$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->orders_url);
 			$failed_count = 0;
 			if (isset($response['failedOrders']) && is_array($response['failedOrders'])) {
 				$failed_count = count($response['failedOrders']);
@@ -513,7 +521,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		
 		$request_body = ['domain' => $domain];
 		
-		$response = $this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/site/domains');
+		$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->domains_url);
 		
 		if (!empty($response['http_code']) && in_array($response['http_code'], [200, 201])) {
 			$log_data = [
@@ -528,7 +536,7 @@ class ControllerExtensionModuleYespo extends Controller {
 			$this->model_setting_setting->editSettingValue('yespo', 'yespo_siteid', $response['siteId']);	
 			$json['siteid'] = $response['siteId'];	
 			
-			$response = $this->model_extension_module_yespo->makePlainRequest($request_body, 'https://esputnik.com/api/v1/site/script');
+			$response = $this->model_extension_module_yespo->makePlainRequest($request_body, $this->site_script_url);
 			if (!empty($response['text']) && !empty($response['http_code']) && in_array($response['http_code'], [200])) {
 				$this->model_setting_setting->editSettingValue('yespo', 'yespo_site_script', $response['text']);
 				$json['site_script'] = $response['text'];
@@ -581,7 +589,7 @@ class ControllerExtensionModuleYespo extends Controller {
 			'serviceWorkerPath' => '/',
 			'serviceWorkerScope' => '/'
 		];
-		$response = $this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/site/webpush/domain');
+		$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->webpush_domain_url);
 		
 		if (!empty($response['http_code']) && in_array($response['http_code'], [200])) {
 			$log_data = [
@@ -596,7 +604,7 @@ class ControllerExtensionModuleYespo extends Controller {
 			$request_body = [
 				'domain' => $domain
 			];
-			$response = $this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/site/webpush/script', 'GET');
+			$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->webpush_script_url, 'GET');
 
 			if (!empty($response['script']) && !empty($response['http_code']) && in_array($response['http_code'], [200])) {
 				$this->load->model('setting/setting'); 

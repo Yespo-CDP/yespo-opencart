@@ -8,10 +8,11 @@ class ModelExtensionModuleYespo extends Model {
 		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json; charset=UTF-8', 'Content-Type: application/json; charset=UTF-8']);
 		curl_setopt($ch, CURLOPT_URL, $event_url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$response = curl_exec($ch); 
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+		$response = curl_exec($ch);
 		curl_close($ch);
 	}
-	
 	
 	public function makeRequest($request_data = [], $event_url = '', $method = 'POST') {
 		
@@ -31,6 +32,8 @@ class ModelExtensionModuleYespo extends Model {
 		curl_setopt($ch, CURLOPT_URL, $event_url);
 		curl_setopt($ch, CURLOPT_USERPWD, $user . ':' . $password);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
 		$response = curl_exec($ch);
 		$response_json = json_decode($response, true);
 		if ($response == '') {
@@ -43,7 +46,6 @@ class ModelExtensionModuleYespo extends Model {
 			];
 		}
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-			
 		curl_close($ch);
 		if ($http_code >= 400) {
 			if (!isset($response_json['error'])) {
@@ -56,7 +58,6 @@ class ModelExtensionModuleYespo extends Model {
 				}
 			}
 		}
-
 		$response_json['http_code'] = $http_code;
 		return $response_json;
 	}
@@ -66,8 +67,11 @@ class ModelExtensionModuleYespo extends Model {
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($request_data, JSON_UNESCAPED_UNICODE));
 		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json; charset=UTF-8', 'Content-Type: application/json; charset=UTF-8']);
-		curl_setopt($ch, CURLOPT_URL, 'https://tracker.esputnik.com/api/v2');
+		curl_setopt($ch, CURLOPT_URL, 'https://tracker.yespo.io/api/v2');
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+
 		if (isset($this->request->server['HTTP_USER_AGENT'])) {
 			curl_setopt($ch, CURLOPT_USERAGENT, $this->request->server['HTTP_USER_AGENT']);
 		} else {

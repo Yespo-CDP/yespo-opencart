@@ -1,6 +1,8 @@
 <?php
 class ControllerExtensionModuleYespo extends Controller {
-	
+	private $contact_url = 'https://yespo.io/api/v1/contact';
+	private $orders_url = 'https://yespo.io/api/v1/orders';
+
 	public function addCustomer($route, $args, $output = null) {
 		$customer_id = (int)$output;
 		
@@ -19,7 +21,7 @@ class ControllerExtensionModuleYespo extends Controller {
 				
 				$this->load->model('extension/module/yespo');
 				$this->model_extension_module_yespo->sendCustomerData();
-				$response = $this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/contact');
+				$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
 				
 				if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
 					$this->model_extension_module_yespo->setBadCustomer($customer_info['customer_id']);
@@ -52,7 +54,7 @@ class ControllerExtensionModuleYespo extends Controller {
 				
 				$this->load->model('extension/module/yespo');
 				$this->model_extension_module_yespo->sendCustomerData();
-				$response = $this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/contact');
+				$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
 				
 				if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
 					$this->model_extension_module_yespo->setBadCustomer($customer_info['customer_id']);
@@ -131,7 +133,7 @@ class ControllerExtensionModuleYespo extends Controller {
 					'orders' => [$order_data]
 				];
 				
-				$response = $this->model_extension_module_yespo->makeRequest($request_body, 'https://esputnik.com/api/v1/orders');
+				$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->orders_url);
 				
 				if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
 					$this->model_extension_module_yespo->setBadOrder($order_info['order_id']);
@@ -151,10 +153,7 @@ class ControllerExtensionModuleYespo extends Controller {
 
 		if ($query_customers->num_rows) {
 			foreach ($query_customers->rows as $row) {
-				$args = [$row['customer_id']];
-				$route = '';
-				$output = null;
-				$result = $this->editCustomer($route, $args, $output);
+				$result = $this->editCustomer('', [$row['customer_id']], null);
 				
 				if ($result === true) {
 					$this->db->query("DELETE FROM `" . DB_PREFIX . "yespo_failed_customers` WHERE customer_id = '" . (int)$row['customer_id'] . "'");
@@ -166,10 +165,7 @@ class ControllerExtensionModuleYespo extends Controller {
 
 		if ($query_orders->num_rows) {
 			foreach ($query_orders->rows as $row) {
-				$args = [$row['order_id']];
-				$route = '';
-				$output = null;
-				$result = $this->processOrder($route, $args, $output);
+				$result = $this->processOrder('', [$row['order_id']], null);
 				
 				if ($result === true) {
 					$this->db->query("DELETE FROM `" . DB_PREFIX . "yespo_failed_orders` WHERE order_id = '" . (int)$row['order_id'] . "'");

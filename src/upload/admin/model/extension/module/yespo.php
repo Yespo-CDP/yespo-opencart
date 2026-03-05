@@ -25,6 +25,8 @@ class ModelExtensionModuleYespo extends Model {
 		curl_setopt($ch, CURLOPT_URL, $event_url);
 		curl_setopt($ch, CURLOPT_USERPWD, $user . ':' . $password);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
 		$response = curl_exec($ch);
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$response_json = json_decode($response, true);
@@ -65,6 +67,9 @@ class ModelExtensionModuleYespo extends Model {
 		curl_setopt($ch, CURLOPT_URL, $event_url);
 		curl_setopt($ch, CURLOPT_USERPWD, $user . ':' . $password);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+
 		$response = curl_exec($ch);
 		$response_json['text'] = $response;
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -91,12 +96,14 @@ class ModelExtensionModuleYespo extends Model {
 		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json; charset=UTF-8', 'Content-Type: application/json; charset=UTF-8']);
 		curl_setopt($ch, CURLOPT_URL, $event_url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+
 		$response = curl_exec($ch); 
 		$response_json = json_decode($response, true);
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$response_json['http_code'] = $http_code;
 		curl_close($ch);
-		$log_str = json_encode($request_data);
 	}
 	
 	public function getCustomers($start, $limit) {
