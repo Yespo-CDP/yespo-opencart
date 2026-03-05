@@ -11,59 +11,59 @@ Unlike manual setups, this module is built on a **"Zero-Configuration"** archite
 This module is designed to work silently and efficiently in the background. Below is the detailed breakdown of all API methods, payloads, and error handling mechanisms.
 
 ### 1. API Key Validation & Initialization
-	* **Method:** `GET /api/v1/account/info`
-	* **Trigger:** User enters the API Key in the module settings and clicks "Synchronize".
-	* **Happy Flow:** The API returns account metadata including `orgId` and `organisationName`. The module saves these credentials to OpenCart's settings, updates the UI to confirm the connection, and triggers the `Add api key success` log.
-	* **Error Handling:** If validation fails (e.g., 401 Unauthorized), the synchronization halts immediately. The UI displays an error to the admin, and the system records an `Add api key error` in the dedicated integration log.
+* **Method:** `GET /api/v1/account/info`
+* **Trigger:** User enters the API Key in the module settings and clicks "Synchronize".
+* **Happy Flow:** The API returns account metadata including `orgId` and `organisationName`. The module saves these credentials to OpenCart's settings, updates the UI to confirm the connection, and triggers the `Add api key success` log.
+* **Error Handling:** If validation fails (e.g., 401 Unauthorized), the synchronization halts immediately. The UI displays an error to the admin, and the system records an `Add api key error` in the dedicated integration log.
 
 ### 2. Automated Web Tracking Setup
-	* **Method:** Automated API requests to register the store's domain and retrieve the tracking configuration.
-	* **Happy Flow:** * The domain is successfully registered (`Add site domain success` log).
-		* The module retrieves the unique Site ID and tracking script (`Get site script success` log).
-		* The script is dynamically injected into the `<head>` or before the `</body>` tag via OpenCart's OCMOD (`Add site script to HTML success` log).
-	* **Error Handling:** If the domain registration or script retrieval fails, the module logs `Add site domain error` or `Get site script error`. The storefront continues to operate normally without breaking frontend performance.
-	* **Behavioral Events & Triggers:** After successful configuration, the following events are automatically tracked:
-		* *Backend Events:* `StatusCart`, `PurchasedItems`, `CustomerData`, `AddToWishlist`.
-		* *Frontend Events:* `StatusCartPage`, `MainPage`, `NotFound`, `ProductPage`, `SearchRequest`, `CategoryPage`.
+* **Method:** Automated API requests to register the store's domain and retrieve the tracking configuration.
+* **Happy Flow:** * The domain is successfully registered (`Add site domain success` log).
+  * The module retrieves the unique Site ID and tracking script (`Get site script success` log).
+  * The script is dynamically injected into after the storefront's `<body>` tag via OpenCart's OCMOD (`Add site script to HTML success` log).
+* **Error Handling:** If the domain registration or script retrieval fails, the module logs `Add site domain error` or `Get site script error`. If the OCMOD injection fails, it logs `Add site script to HTML error`. The storefront continues to operate normally without breaking frontend performance.
+* **Behavioral Events & Triggers:** After successful configuration, the following events are automatically tracked:
+  * *Backend Events:* `StatusCart`, `PurchasedItems`, `CustomerData`, `AddToWishlist`.
+  * *Frontend Events:* `StatusCartPage`, `MainPage`, `NotFound`, `ProductPage`, `SearchRequest`, `CategoryPage`.
 
 ### 3. Automated Web Push Configuration
 The module automatically configures Yespo's Web Push capabilities through a sequential API flow.
-	* **Step 1: Domain Registration**
-		* **Method:** `POST /api/v1/domain/web-push`
-		* **Payload:** The plugin sends the store's `domain`, the intended `serviceWorkerName` (e.g., `sw.js`), and the `serviceWorkerScope` (typically `/`).
-		* **Happy Flow:** If Yespo successfully registers the domain, it logs an `Add web-push domain success` event.
-	* **Step 2: Script & Service Worker Retrieval**
-		* **Method:** `GET /api/v1/domain/web-push/script`
-		* **Trigger:** Initiated immediately upon successful domain registration.
-		* **Happy Flow:** The API returns both the HTML script snippet and the raw JavaScript content for the Service Worker. This triggers a `Get web-push script success` log.
-	* **Step 3: Implementation & File Generation**
-		* **Service Worker Placement:** The plugin takes the raw Service Worker content returned by the API, automatically creates the physical file, and saves it directly to the root directory of your OpenCart installation (`Add sw-yespo.js to site root success`).
-		* **HTML Injection:** The retrieved script is dynamically injected into the storefront's `<head>` or before the `</body>` tag via OCMOD. This enables the native subscription prompt for visitors.
-	* **Error Handling:** Failures at any stage are intercepted. The system logs specific errors such as `Add web-push domain error`, `Get web-push script error`, `Add web-push script to HTML error`, or `Add sw.js to site root error`.
+* **Step 1: Domain Registration**
+  * **Method:** `POST /api/v1/domain/web-push`
+  * **Payload:** The plugin sends the store's `domain`, the intended `serviceWorkerName` (e.g., `sw-yespo.js`), and the `serviceWorkerScope` (typically `/`).
+  * **Happy Flow:** If Yespo successfully registers the domain, it logs an `Add web-push domain success` event.
+* **Step 2: Script & Service Worker Retrieval**
+  * **Method:** `GET /api/v1/domain/web-push/script`
+  * **Trigger:** Initiated immediately upon successful domain registration.
+  * **Happy Flow:** The API returns both the HTML script snippet and the raw JavaScript content for the Service Worker. This triggers a `Get web-push script success` log.
+* **Step 3: Implementation & File Generation**
+  * **Service Worker Placement:** The plugin takes the raw Service Worker content returned by the API, automatically creates the physical file, and saves it directly to the root directory of your OpenCart installation (`Add sw-yespo.js to site root success`).
+  * **HTML Injection:** The retrieved script is dynamically injected into the storefront's after the `<body>` tag via OCMOD (`Add web-push script to HTML success`). This enables the native subscription prompt for visitors.
+* **Error Handling:** Failures at any stage are intercepted. The system logs specific errors such as `Add web-push domain error`, `Get web-push script error`, `Add web-push script to HTML error`.
 
 ### 4. Contact Synchronization (Real-time & Bulk)
-	* **Real-time Methods:** `POST /api/v1/contact` (Create/Update) and `DELETE /api/v1/contact` (Delete).
-		* **Trigger:** OpenCart's native hooks (`customer/addCustomer/after`, `customer/editCustomer/after`, `customer/deleteCustomer/after`).
-		* **Payload:** Mapped object containing `externalCustomerId`, `firstName`, `lastName`, and `channels` (email, and sanitized SMS phone number).
-	* **Bulk Method:** `POST /api/v1/contacts`
-		* **Trigger:** Background script using batched queries (`LIMIT/OFFSET`).
-		* **Happy Flow:** Batches are accepted by the API, logging `Add contacts (bulk) success`.
-	* **Error Handling:** Any malformed data, API timeouts, or rejection responses trigger a `Data sync error` (for single syncs) or `Add contacts (bulk) error` (for batch operations), ensuring no data loss goes unnoticed.
+* **Real-time Methods:** `POST /api/v1/contact` (Create/Update) and `DELETE /api/v1/contact` (Delete).
+  * **Trigger:** OpenCart's native hooks (`customer/addCustomer/after`, `customer/editCustomer/after`, `customer/deleteCustomer/after`).
+  * **Payload:** Mapped object containing `externalCustomerId`, `firstName`, `lastName`, and `channels` (email, and sanitized SMS phone number).
+* **Bulk Method:** `POST /api/v1/contacts`
+  * **Trigger:** Background script using batched queries (`LIMIT/OFFSET`).
+  * **Happy Flow:** Batches are accepted by the API, logging `Add contacts (bulk) success`.
+* **Error Handling:** Any malformed data, API timeouts, or rejection responses trigger a `Data sync error` (for single syncs) or `Add contacts (bulk) error` (for batch operations), ensuring no data loss goes unnoticed.
 
 ### 5. Order Synchronization (Real-time & Bulk)
-	* **Real-time Method:** `POST /api/v1/orders`
-		* **Trigger:** OpenCart event `checkout/order/addOrderHistory/after`.
-		* **Payload:** Object containing `externalOrderId`, `externalCustomerId`, `totalCost`, mapped order status, and an `items` array (`externalItemId`, `name`, `cost`, `quantity`).
-	* **Bulk Method:** `POST /api/v1/orders` (Array Payload)
-		* **Trigger:** Background batched execution for historical data.
-		* **Happy Flow:** Orders are mapped and accepted, triggering the `Add orders (bulk) success` log.
-	* **Status Mapping:** Module translates OpenCart statuses (using `config_processing_status` and `config_complete_status`) to Yespo equivalents for accurate RFM analysis and trigger campaigns.
-	* **Error Handling:** Validation errors or API unavailability result in `Data sync error` or `Add orders (bulk) error` logs.
+* **Real-time Method:** `POST /api/v1/orders`
+  * **Trigger:** OpenCart event `checkout/order/addOrderHistory/after`.
+  * **Payload:** Object containing `externalOrderId`, `externalCustomerId`, `totalCost`, mapped order status, and an `items` array (`externalItemId`, `name`, `cost`, `quantity`).
+* **Bulk Method:** `POST /api/v1/orders` (Array Payload)
+  * **Trigger:** Background batched execution for historical data.
+  * **Happy Flow:** Orders are mapped and accepted, triggering the `Add orders (bulk) success` log.
+* **Status Mapping:** Module translates OpenCart statuses (using `config_processing_status` and `config_complete_status`) to Yespo equivalents for accurate RFM analysis and trigger campaigns.
+* **Error Handling:** Validation errors or API unavailability result in `Data sync error` or `Add orders (bulk) error` logs.
 
 ### 6. Background Logging System
-	* The module includes an isolated logging engine specifically for Yespo API interactions.
-	* It silently captures all connectivity issues, data validation errors, and other faults without exposing them to the frontend user.
-	* This provides developers with an actionable audit trail for debugging without affecting the store's conversion rates.
+* The module includes an isolated logging engine specifically for Yespo API interactions.
+* It silently captures all connectivity issues, data validation errors, and file generation faults without exposing them to the frontend user.
+* This provides developers with an actionable audit trail for debugging without affecting the store's conversion rates.
 
 ---
 
@@ -78,11 +78,11 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 
 ## 🛠 Installation Guide
 
-1. Download the latest `yespo.ocmod.zip` from the Releases page. **Important:** Only download releases directly from this official repository. Beware of pirate platforms such as dev-opencart.com, which routinely deceive users and distribute modified, unsafe archives. Protect your store and customer data by avoiding such sites.
+1. Download the latest `yespo.ocmod.zip` from the Releases page. **Important:** Only download releases directly from this official repository. Beware of pirate platforms and unofficial sources, which routinely deceive users and distribute modified, unsafe archives. Protect your store and customer data by avoiding such sites.
 2. Log in to your OpenCart Admin Panel.
 3. Navigate to **Extensions > Extension Installer**.
 4. Click **Upload** and select the downloaded `yespo.ocmod.zip` file. Wait for the success message.
-5. Go to **Extensions > Modifications** and click the **Refresh** button (top right corner) to rebuild the cache and apply event hooks.
+5. Go to **Extensions > Modifications** and click the **Refresh** button (top right corner) to rebuild the modifications cache.
 6. Navigate to **Extensions > Extensions**, choose **Modules** from the dropdown list.
 7. Find **Yespo CDP Integration** in the list and click the green **Install** button.
 
