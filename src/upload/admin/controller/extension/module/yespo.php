@@ -9,7 +9,7 @@ class ControllerExtensionModuleYespo extends Controller {
 	private $site_script_url = 'https://yespo.io/api/v1/site/script';
 	private $webpush_domain_url = 'https://yespo.io/api/v1/site/webpush/domain';
 	private $webpush_script_url = 'https://yespo.io/api/v1/site/webpush/script';
-	
+
 	public function index() {
 		$this->load->language('extension/module/yespo');
 
@@ -66,7 +66,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		$data['yespo_status'] = $this->config->get('yespo_status');
 		$data['yespo_api_key'] = $this->config->get('yespo_api_key');
 		$data['yespo_orgname'] = $this->config->get('yespo_orgname');
-		
+
 		$data['yespo_site_script'] = $this->config->get('yespo_site_script');
 		$data['yespo_web_push'] = $this->config->get('yespo_web_push');
 
@@ -85,7 +85,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		$this->load->model('extension/module/yespo');
 		$data['total_customers_db'] = $this->model_extension_module_yespo->getTotalCustomers();
 		$data['total_orders_db'] = $this->model_extension_module_yespo->getTotalOrders();		
-		
+
 		$data['check_api_key'] = html_entity_decode($this->url->link('extension/module/yespo/checkApiKey', $token, true));
 		$data['load_customers'] = html_entity_decode($this->url->link('extension/module/yespo/loadCustomers', $token, true));
 		$data['load_orders'] = html_entity_decode($this->url->link('extension/module/yespo/loadOrders', $token, true));
@@ -93,7 +93,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		$data['add_web_push'] = html_entity_decode($this->url->link('extension/module/yespo/addWebPush', $token, true));
 		$data['disconnect'] = html_entity_decode($this->url->link('extension/module/yespo/disconnect', $token, true));
 		$data['set_active'] = html_entity_decode($this->url->link('extension/module/yespo/setActive', $token, true));
-		
+
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');
 		$data['footer'] = $this->load->controller('common/footer');
@@ -107,41 +107,43 @@ class ControllerExtensionModuleYespo extends Controller {
 		
 		$this->load->language('extension/module/yespo');
 		$this->load->model('extension/module/yespo');
-		
+
 		if ($this->request->server['REQUEST_METHOD'] == 'POST' && $api_key && $this->validate()) {
 			$current_api_key = $this->config->get('yespo_api_key');
 			$request = $this->model_extension_module_yespo->makeRequest([], $this->account_info_url, 'GET', $api_key, true);
-			
+
 			if (!empty($request['orgId'])) {
 				$log_data = [
-					'orgId'        => $request['orgId'],
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => '',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME']]),
-					'message'      => 'ADD_API_KEY_SUCCESS',
-					'log_level'    => 'INFO'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME']]),
+					'message'   => 'ADD_API_KEY_SUCCESS',
+					'log_level' => 'INFO'
 				];
-				$this->model_extension_module_yespo->makeLogRequest($log_data);
-				
+				$this->model_extension_module_yespo->makeLogRequest($log_data, $request['orgId']);
+
 				$json['success'] = true;
 				$json['org_name'] = $request['organisationName'];
 				$json['orgid'] = $request['orgId'];
-				
+
 				$this->load->model('setting/setting');
-				
+
 				if ($current_api_key !== $api_key) {
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_api_key', $api_key);
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_orgid', $request['orgId']);
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_orgname', $request['organisationName']);
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_customers_loaded', '0');
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_orders_loaded', '0');
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_bad_customers', '0');
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_bad_orders', '0');
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_customers_page', '1');
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_orders_page', '1');
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_site_script', '');
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_web_push', '');
-					$this->model_setting_setting->editSettingValue('yespo', 'yespo_status', '0');
+					$setting = [
+						'yespo_status' => '0',
+						'yespo_api_key' => $api_key,
+						'yespo_orgid' => $request['orgId'],
+						'yespo_siteid' => '',
+						'yespo_orgname' => $request['organisationName'],
+						'yespo_customers_loaded' => '0',
+						'yespo_orders_loaded' => '0',
+						'yespo_customers_page' => '1',
+						'yespo_orders_page' => '1',
+						'yespo_bad_customers' => '0',
+						'yespo_bad_orders' => '0',
+						'yespo_site_script' => '',
+						'yespo_web_push' => '',
+						'yespo_web_push_script' => ''
+					];
+					$this->model_setting_setting->editSetting('yespo', $setting);
 					if (version_compare(VERSION,'3.0.0.0', '>=')) {
 						$this->model_setting_setting->editSetting('module_yespo', ['module_yespo_status' => 0]);
 					}
@@ -152,23 +154,20 @@ class ControllerExtensionModuleYespo extends Controller {
 			} else {
 				$json['success'] = false;
 				$log_data = [
-					'orgId'        => '',
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => 'ADD_API_KEY_FAILED',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $request]),
-					'message'      => 'ADD_API_KEY_FAILED',
-					'log_level'    => 'INFO'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $request]),
+					'message'   => 'ADD_API_KEY_FAILED',
+					'log_level' => 'INFO'
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 			}
 		} else {
 			$json['success'] = false;
 		}
-		
+
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
-	
+
 	public function setActive() {
 		$json = ['success' => false];
 		if ($this->validate()) {
@@ -182,49 +181,41 @@ class ControllerExtensionModuleYespo extends Controller {
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
-	
+
+	public function sendCustomer($customer_id) {
+		$this->load->model('customer/customer');
+		$customer_info = $this->model_customer_customer->getCustomer($customer_id);
+		if ($customer_info) {
+			$phone = preg_replace('/[^0-9]/', '', (string)$customer_info['telephone']);
+			$request_body = [
+				'externalCustomerId' => $customer_info['customer_id'],
+				'firstName' => $customer_info['firstname'],
+				'lastName'  => $customer_info['lastname'],
+				'channels'  => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]]
+			];
+			$this->load->model('extension/module/yespo');
+			$this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
+		}
+	}
+
 	public function addCustomer($route, $args, $output = null) {
 		if (!empty($output)) {
 			$customer_id = (int)$output;
-			$this->load->model('customer/customer');
-			$customer_info = $this->model_customer_customer->getCustomer($customer_id);
-			if ($customer_info) {
-				$phone = preg_replace('/[^0-9]/', '', (string)$customer_info['telephone']);
-				$request_body = [
-					'externalCustomerId' => $customer_info['customer_id'],
-					'firstName'  => $customer_info['firstname'],
-					'lastName'   => $customer_info['lastname'],
-					'channels'   => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]]
-				];
-				$this->load->model('extension/module/yespo');
-				$this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
+			if ($customer_id) {
+				$this->sendCustomer($customer_id);
 			}
 		}
 	}
-	
+
 	public function editCustomer($route, $args, $output = null) {
 		$customer_id = isset($args[0]) ? (int)$args[0] : 0;
-		
 		if ($customer_id) {
-			$this->load->model('customer/customer');
-			$customer_info = $this->model_customer_customer->getCustomer($customer_id);
-			if ($customer_info) {
-				$phone = preg_replace('/[^0-9]/', '', (string)$customer_info['telephone']);
-				$request_body = [
-					'externalCustomerId' => $customer_info['customer_id'],
-					'firstName'  => $customer_info['firstname'],
-					'lastName'   => $customer_info['lastname'],
-					'channels'   => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]]
-				];
-				$this->load->model('extension/module/yespo');
-				$this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
-			}
+			$this->sendCustomer($customer_id);
 		}
 	}
-	
+
 	public function deleteCustomer($route, $args, $output = null) {
 		$customer_id = isset($args[0]) ? (int)$args[0] : 0;
-		
 		if ($customer_id) {
 			$request_body = [
 				'externalCustomerId' => $customer_id,
@@ -263,11 +254,11 @@ class ControllerExtensionModuleYespo extends Controller {
 				$phone = preg_replace('/[^0-9]/', '', (string)$customer['telephone']);
 				$contacts_payload[] = [
 					'externalCustomerId' => $customer['customer_id'],
-					'email'      => $customer['email'],
-					'firstName'  => $customer['firstname'],
-					'lastName'   => $customer['lastname'],
-					'phone'      => $phone,
-					'channels'   => [['type' => 'email', 'value' => $customer['email']], ['type' => 'sms', 'value' => $phone]]
+					'email'     => $customer['email'],
+					'firstName' => $customer['firstname'],
+					'lastName'  => $customer['lastname'],
+					'phone'     => $phone,
+					'channels'  => [['type' => 'email', 'value' => $customer['email']], ['type' => 'sms', 'value' => $phone]]
 				];
 			}
 
@@ -300,12 +291,9 @@ class ControllerExtensionModuleYespo extends Controller {
 				$batch_end = (($start + $limit) > $json['total_customers']) ? $json['total_customers'] : ($start + $limit);
 				$batch_range = $start . '-' . $batch_end;
 				$log_data = [
-					'orgId'        => (int)$this->config->get('yespo_orgid'),
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => '',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'batchRange' => $batch_range, 'responseBody' => $response]),
-					'message'      => 'SEND_CONTACTS_BULK_SUCCESS',
-					'log_level'    => 'INFO' 
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'batchRange' => $batch_range, 'responseBody' => $response]),
+					'message'   => 'SEND_CONTACTS_BULK_SUCCESS',
+					'log_level' => 'INFO' 
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 
@@ -325,12 +313,9 @@ class ControllerExtensionModuleYespo extends Controller {
 				}
 				
 				$log_data = [
-					'orgId'        => (int)$this->config->get('yespo_orgid'),
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => 'Upload Error',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $response]),
-					'message'      => 'SEND_CONTACTS_BULK_FAILED',
-					'log_level'    => 'ERROR'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $response]),
+					'message'   => 'SEND_CONTACTS_BULK_FAILED',
+					'log_level' => 'ERROR'
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 			}
@@ -343,12 +328,9 @@ class ControllerExtensionModuleYespo extends Controller {
 			$this->model_setting_setting->editSettingValue('yespo', 'yespo_customers_loaded', '1');
 			
 			$log_data = [
-				'orgId'        => (int)$this->config->get('yespo_orgid'),
-				'typeCMS'      => 'OpenCart',
-				'errorMessage' => '',
-				'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME']]),
-				'message'      => 'SEND_CONTACTS_BULK_SUCCESS',
-				'log_level'    => 'INFO'
+				'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME']]),
+				'message'   => 'SEND_CONTACTS_BULK_SUCCESS',
+				'log_level' => 'INFO'
 			];
 			$this->model_extension_module_yespo->makeLogRequest($log_data);
 		}
@@ -356,7 +338,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
-	
+
 	public function loadOrders() {
 		$this->load->language('extension/module/yespo');
 		$this->load->model('extension/module/yespo');
@@ -364,11 +346,11 @@ class ControllerExtensionModuleYespo extends Controller {
 		$this->load->model('setting/setting');
 		
 		$json = [];
-		
+
 		$page = isset($this->request->post['page']) ? (int)$this->request->post['page'] : 1;
 		$limit = 300;
 		$start = ($page - 1) * $limit;
-		
+
 		if (empty($this->session->data['yespo_total_orders'])) {
 			$json['total_orders'] = $this->model_extension_module_yespo->getTotalOrders();
 			$this->session->data['yespo_total_orders'] = $json['total_orders'];
@@ -399,7 +381,7 @@ class ControllerExtensionModuleYespo extends Controller {
 						];
 					}
 				}
-				
+
 				$status = 'INITIALIZED';
 				if (is_array($in_progress_status) && in_array($order['order_status_id'], $in_progress_status)) {
 					$status = 'IN_PROGRESS';
@@ -407,20 +389,20 @@ class ControllerExtensionModuleYespo extends Controller {
 				if (is_array($delivered_status) && in_array($order['order_status_id'], $delivered_status)) {
 					$status = 'DELIVERED';
 				}
-				
+
 				$order_data = [
-					'externalOrderId'    => $order['order_id'],
-					'totalCost'          => $this->currency->format($order['total'], $this->config->get('config_currency'), '', false),
-					'status'             => $status,
-					'date'               => gmdate('Y-m-d\TH:i:s\Z', strtotime($order['date_added'])),
-					'currency'           => $this->config->get('config_currency'),
-					'email'              => $order['email'],
-					'phone'              => preg_replace('/[^0-9]/', '', (string)$order['telephone']),
-					'firstName'          => $order['firstname'],
-					'lastName'           => $order['lastname'],
-					'deliveryMethod'     => $order['shipping_method'],
-					'paymentMethod'      => $order['payment_method'],
-					'items'              => $items
+					'externalOrderId' => $order['order_id'],
+					'totalCost'       => $this->currency->format($order['total'], $this->config->get('config_currency'), '', false),
+					'status'          => $status,
+					'date'            => gmdate('Y-m-d\TH:i:s\Z', strtotime($order['date_added'])),
+					'currency'        => $this->config->get('config_currency'),
+					'email'           => $order['email'],
+					'phone'           => preg_replace('/[^0-9]/', '', (string)$order['telephone']),
+					'firstName'       => $order['firstname'],
+					'lastName'        => $order['lastname'],
+					'deliveryMethod'  => $order['shipping_method'],
+					'paymentMethod'   => $order['payment_method'],
+					'items'           => $items
 				];
 				if ($order['customer_id'] > 0) {
 					$order_data['externalCustomerId'] = $order['customer_id'];
@@ -428,16 +410,14 @@ class ControllerExtensionModuleYespo extends Controller {
 				$orders_payload[] = $order_data;
 			}
 
-			$request_body = [
-				'orders' => $orders_payload
-			];
+			$request_body['orders'] = $orders_payload;
 
 			$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->orders_url);
 			$failed_count = 0;
 			if (isset($response['failedOrders']) && is_array($response['failedOrders'])) {
 				$failed_count = count($response['failedOrders']);
 			}
-			
+
 			if (!empty($response) && isset($response['http_code']) && $response['http_code'] == 200) {
 				$json['success'] = true;
 				$json['processed_count'] = count($orders_payload);
@@ -455,12 +435,9 @@ class ControllerExtensionModuleYespo extends Controller {
 				$batch_end = ($start + $limit) > $json['total_orders'] ? $json['total_orders'] : ($start + $limit);
 				$batch_range = $start . '-' . $batch_end;
 				$log_data = [
-					'orgId'        => (int)$this->config->get('yespo_orgid'),
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => '',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'batchRange' => $batch_range, 'responseBody' => $response]),
-					'message'      => 'SEND_ORDERS_INFO',
-					'log_level'    => 'INFO'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'batchRange' => $batch_range, 'responseBody' => $response]),
+					'message'   => 'SEND_ORDERS_INFO',
+					'log_level' => 'INFO'
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 
@@ -470,7 +447,6 @@ class ControllerExtensionModuleYespo extends Controller {
 					$json['next_page'] = false;
 					$this->model_setting_setting->editSettingValue('yespo', 'yespo_orders_loaded', '1');
 				}
-
 			} elseif (!empty($response)) {
 				$json['success'] = false;
 				if (isset($response['http_code']) && $response['http_code'] == 401) {
@@ -478,32 +454,24 @@ class ControllerExtensionModuleYespo extends Controller {
 				} else {
 					$json['error'] = $this->language->get('error_connection');
 				}
-				
+
 				$log_data = [
-					'orgId'        => (int)$this->config->get('yespo_orgid'),
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => 'Order Upload Error',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $response]),
-					'message'      => 'SEND_ORDERS_BULK_FAILED',
-					'log_level'    => 'ERROR'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $response]),
+					'message'   => 'SEND_ORDERS_BULK_FAILED',
+					'log_level' => 'ERROR'
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 			}
-
 		} else {
 			$json['success'] = true;
 			$json['processed_count'] = 0;
 			$json['failed_count'] = 0;
 			$json['next_page'] = false;
 			$this->model_setting_setting->editSettingValue('yespo', 'yespo_orders_loaded', '1');
-
 			$log_data = [
-				'orgId'        => (int)$this->config->get('yespo_orgid'),
-				'typeCMS'      => 'OpenCart',
-				'errorMessage' => '',
-				'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME']]),
-				'message'      => 'SEND_ORDERS_BULK_SUCCESS',
-				'log_level'    => 'INFO'
+				'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME']]),
+				'message'   => 'SEND_ORDERS_BULK_SUCCESS',
+				'log_level' => 'INFO'
 			];
 			$this->model_extension_module_yespo->makeLogRequest($log_data);
 		}
@@ -518,19 +486,16 @@ class ControllerExtensionModuleYespo extends Controller {
 		
 		$json = [];
 		$domain = $this->request->server['SERVER_NAME'];
-		
+
 		$request_body = ['domain' => $domain];
-		
+
 		$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->domains_url);
-		
+
 		if (!empty($response['http_code']) && in_array($response['http_code'], [200, 201])) {
 			$log_data = [
-				'orgId'        => (int)$this->config->get('yespo_orgid'),
-				'typeCMS'      => 'OpenCart',
-				'errorMessage' => '',
-				'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
-				'message'      => 'ADD_DOMAIN_SUCCESS',
-				'log_level'    => 'INFO'
+				'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
+				'message'   => 'ADD_DOMAIN_SUCCESS',
+				'log_level' => 'INFO'
 			];
 			$this->model_extension_module_yespo->makeLogRequest($log_data);
 			$this->model_setting_setting->editSettingValue('yespo', 'yespo_siteid', $response['siteId']);	
@@ -542,34 +507,25 @@ class ControllerExtensionModuleYespo extends Controller {
 				$json['site_script'] = $response['text'];
 				$json['success'] = true; 
 				$log_data = [
-					'orgId'        => (int)$this->config->get('yespo_orgid'),
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => '',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
-					'message'      => 'GET_SCRIPT_SUCCESS',
-					'log_level'    => 'INFO'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
+					'message'   => 'GET_SCRIPT_SUCCESS',
+					'log_level' => 'INFO'
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 			} else {
 				$log_data = [
-					'orgId'        => (int)$this->config->get('yespo_orgid'),
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => '',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
-					'message'      => 'GET_SCRIPT_FAILED',
-					'log_level'    => 'ERROR'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
+					'message'   => 'GET_SCRIPT_FAILED',
+					'log_level' => 'ERROR'
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 			}
 		} else {
 			$json['error'] = true;
 			$log_data = [
-				'orgId'        => (int)$this->config->get('yespo_orgid'),
-				'typeCMS'      => 'OpenCart',
-				'errorMessage' => '',
-				'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
-				'message'      => 'ADD_DOMAIN_FAILED',
-				'log_level'    => 'ERROR'
+				'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
+				'message'   => 'ADD_DOMAIN_FAILED',
+				'log_level' => 'ERROR'
 			];
 			$this->model_extension_module_yespo->makeLogRequest($log_data);
 		}
@@ -585,25 +541,20 @@ class ControllerExtensionModuleYespo extends Controller {
 		$domain = $this->request->server['SERVER_NAME'];
 		$request_body = [
 			'domain' => $domain,
-			'serviceWorkerName' => 'sw-yespo.js',
-			'serviceWorkerPath' => '/',
+			'serviceWorkerName'  => 'sw-yespo.js',
+			'serviceWorkerPath'  => '/',
 			'serviceWorkerScope' => '/'
 		];
 		$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->webpush_domain_url);
-		
+
 		if (!empty($response['http_code']) && in_array($response['http_code'], [200])) {
 			$log_data = [
-				'orgId'        => (int)$this->config->get('yespo_orgid'),
-				'typeCMS'      => 'OpenCart',
-				'errorMessage' => '',
 				'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
 				'message'      => 'ADD_WEB_PUSH_DOMAIN_SUCCESS',
 				'log_level'    => 'INFO'
 			];
 			$this->model_extension_module_yespo->makeLogRequest($log_data); 
-			$request_body = [
-				'domain' => $domain
-			];
+			$request_body['domain'] = $domain;
 			$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->webpush_script_url, 'GET');
 
 			if (!empty($response['script']) && !empty($response['http_code']) && in_array($response['http_code'], [200])) {
@@ -617,35 +568,26 @@ class ControllerExtensionModuleYespo extends Controller {
 				}
 				$json['success'] = true; 
 				$log_data = [
-					'orgId'        => (int)$this->config->get('yespo_orgid'),
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => '',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
-					'message'      => 'GET_WEB_PUSH_SCRIPT_SUCCESS',
-					'log_level'    => 'INFO'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
+					'message'   => 'GET_WEB_PUSH_SCRIPT_SUCCESS',
+					'log_level' => 'INFO'
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 			} else {
 				$json['error'] = true;
 				$log_data = [
-					'orgId'        => (int)$this->config->get('yespo_orgid'),
-					'typeCMS'      => 'OpenCart',
-					'errorMessage' => '',
-					'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
-					'message'      => 'GET_WEB_PUSH_SCRIPT_FAILED',
-					'log_level'    => 'ERROR'
+					'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]),
+					'message'   => 'GET_WEB_PUSH_SCRIPT_FAILED',
+					'log_level' => 'ERROR'
 				];
 				$this->model_extension_module_yespo->makeLogRequest($log_data);
 			}
 		} else {
 			$json['error'] = true;
 			$log_data = [
-				'orgId'        => (int)$this->config->get('yespo_orgid'),
-				'typeCMS'      => 'OpenCart',
-				'errorMessage' => '',
-				'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $response]),
-				'message'      => 'ADD_DOMAIN_FAILED',
-				'log_level'    => 'ERROR'
+				'data'      => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $response]),
+				'message'   => 'ADD_DOMAIN_FAILED',
+				'log_level' => 'ERROR'
 			];
 			$this->model_extension_module_yespo->makeLogRequest($log_data);
 		}
@@ -653,7 +595,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
-	
+
 	protected function validate() {
 		if (!$this->user->hasPermission('modify', 'extension/module/yespo')) {
 			$this->error['warning'] = $this->language->get('error_permission');

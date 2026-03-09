@@ -3,68 +3,46 @@ class ControllerExtensionModuleYespo extends Controller {
 	private $contact_url = 'https://yespo.io/api/v1/contact';
 	private $orders_url = 'https://yespo.io/api/v1/orders';
 
-	public function addCustomer($route, $args, $output = null) {
-		$customer_id = (int)$output;
-		
-		if ($customer_id) {
-			$this->load->model('account/customer');
-			$customer_info = $this->model_account_customer->getCustomer($customer_id);
+	public function sendCustomer($customer_id) {
+		$this->load->model('account/customer');
+		$customer_info = $this->model_account_customer->getCustomer($customer_id);
+		if ($customer_info) {
+			$phone = preg_replace('/[^0-9]/', '', (string)$customer_info['telephone']); 
+			$request_body = [
+				'externalCustomerId' => $customer_info['customer_id'],
+				'firstName' => $customer_info['firstname'],
+				'lastName'  => $customer_info['lastname'],
+				'channels'  => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]],
+			];
 			
-			if ($customer_info) {
-				$phone = preg_replace('/[^0-9]/', '', (string)$customer_info['telephone']); 
-				$request_body = [
-					'externalCustomerId' => $customer_info['customer_id'],
-					'firstName'  => $customer_info['firstname'],
-					'lastName'   => $customer_info['lastname'],
-					'channels'   => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]],
-				];
-				
-				$this->load->model('extension/module/yespo');
-				$this->model_extension_module_yespo->sendCustomerData();
-				$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
-				
-				if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
-					$this->model_extension_module_yespo->setBadCustomer($customer_info['customer_id']);
-				}
+			$this->load->model('extension/module/yespo');
+			$this->model_extension_module_yespo->sendCustomerData();
+			$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
+			
+			if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
+				$this->model_extension_module_yespo->setBadCustomer($customer_info['customer_id']);
 			}
 		}
 	}
-	
+
+	public function addCustomer($route, $args, $output = null) {
+		$customer_id = (int)$output;
+		if ($customer_id) {
+			$this->sendCustomer($customer_id);
+		}
+	}
+
 	public function editCustomer($route, $args, $output = null) {
 		$customer_id = 0;
-		
 		if (isset($args[0]) && is_scalar($args[0])) {
 			$customer_id = (int)$args[0];
 		} elseif ($this->customer->isLogged()) {
 			$customer_id = $this->customer->getId();
 		}
-		
 		if ($customer_id) {
-			$this->load->model('account/customer');
-			$customer_info = $this->model_account_customer->getCustomer($customer_id);
-			
-			if ($customer_info) {
-				$phone = preg_replace('/[^0-9]/', '', (string)$customer_info['telephone']); 
-				$request_body = [
-					'externalCustomerId' => $customer_info['customer_id'],
-					'firstName'  => $customer_info['firstname'],
-					'lastName'   => $customer_info['lastname'],
-					'channels'   => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]],
-				];
-				
-				$this->load->model('extension/module/yespo');
-				$this->model_extension_module_yespo->sendCustomerData();
-				$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
-				
-				if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
-					$this->model_extension_module_yespo->setBadCustomer($customer_info['customer_id']);
-					return false;
-				}
-				return true;
-			}
+			$this->sendCustomer($customer_id);
 		}
-		return false;
-	}	
+	}
 
 	public function processOrder($route, $args, $output = null) {
 		$order_id = isset($args[0]) ? (int)$args[0] : 0;
@@ -99,7 +77,7 @@ class ControllerExtensionModuleYespo extends Controller {
 						];
 					}
 				}
-				
+
 				$status = 'INITIALIZED';
 				
 				if (is_array($in_progress_status) && isset($order_info['order_status_id']) && in_array($order_info['order_status_id'], $in_progress_status)) {
@@ -109,32 +87,30 @@ class ControllerExtensionModuleYespo extends Controller {
 				if (is_array($delivered_status) && isset($order_info['order_status_id']) && in_array($order_info['order_status_id'], $delivered_status)) {
 					$status = 'DELIVERED';
 				}
-				
+
 				$order_data = [
-					'externalOrderId'    => $order_info['order_id'],
-					'totalCost'          => (string)$this->currency->format($order_info['total'], $this->config->get('config_currency'), '', false),
-					'status'             => $status,
-					'date'               => gmdate('Y-m-d\TH:i:s\Z', strtotime($order_info['date_added'])),
-					'currency'           => (string)$this->config->get('config_currency'),
-					'email'              => $order_info['email'],
-					'phone'              => preg_replace('/[^0-9]/', '', (string)$order_info['telephone']),
-					'firstName'          => $order_info['firstname'],
-					'lastName'           => $order_info['lastname'],
-					'deliveryMethod'     => isset($order_info['shipping_method']) ? $order_info['shipping_method'] : '',
-					'paymentMethod'      => isset($order_info['payment_method']) ? $order_info['payment_method'] : '',
-					'items'              => $items,
+					'externalOrderId' => $order_info['order_id'],
+					'totalCost'       => (string)$this->currency->format($order_info['total'], $this->config->get('config_currency'), '', false),
+					'status'          => $status,
+					'date'            => gmdate('Y-m-d\TH:i:s\Z', strtotime($order_info['date_added'])),
+					'currency'        => (string)$this->config->get('config_currency'),
+					'email'           => $order_info['email'],
+					'phone'           => preg_replace('/[^0-9]/', '', (string)$order_info['telephone']),
+					'firstName'       => $order_info['firstname'],
+					'lastName'        => $order_info['lastname'],
+					'deliveryMethod'  => isset($order_info['shipping_method']) ? $order_info['shipping_method'] : '',
+					'paymentMethod'   => isset($order_info['payment_method']) ? $order_info['payment_method'] : '',
+					'items'           => $items,
 				];
-				
+
 				if (!empty($order_info['customer_id'])) {
 					$order_data['externalCustomerId'] = $order_info['customer_id'];
 				}
-				
-				$request_body = [
-					'orders' => [$order_data]
-				];
+
+				$request_body['orders'] = [$order_data];
 				
 				$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->orders_url);
-				
+
 				if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
 					$this->model_extension_module_yespo->setBadOrder($order_info['order_id']);
 					return false;
@@ -144,9 +120,9 @@ class ControllerExtensionModuleYespo extends Controller {
 		}
 		return false;
 	}
-	
+
 	public function checkBadOrdersAndCustomers() {
-		$limit = 20; 
+		$limit = 20;
 		$interval = '15 MINUTE';
 		
 		$query_customers = $this->db->query("SELECT * FROM `" . DB_PREFIX . "yespo_failed_customers` WHERE `last_attempt` < (NOW() - INTERVAL " . $interval . ") LIMIT " . (int)$limit);
@@ -154,7 +130,6 @@ class ControllerExtensionModuleYespo extends Controller {
 		if ($query_customers->num_rows) {
 			foreach ($query_customers->rows as $row) {
 				$result = $this->editCustomer('', [$row['customer_id']], null);
-				
 				if ($result === true) {
 					$this->db->query("DELETE FROM `" . DB_PREFIX . "yespo_failed_customers` WHERE customer_id = '" . (int)$row['customer_id'] . "'");
 				}
@@ -166,7 +141,6 @@ class ControllerExtensionModuleYespo extends Controller {
 		if ($query_orders->num_rows) {
 			foreach ($query_orders->rows as $row) {
 				$result = $this->processOrder('', [$row['order_id']], null);
-				
 				if ($result === true) {
 					$this->db->query("DELETE FROM `" . DB_PREFIX . "yespo_failed_orders` WHERE order_id = '" . (int)$row['order_id'] . "'");
 				}
