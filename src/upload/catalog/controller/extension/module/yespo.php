@@ -14,14 +14,13 @@ class ControllerExtensionModuleYespo extends Controller {
 				'lastName'  => $customer_info['lastname'],
 				'channels'  => [['type' => 'email', 'value' => $customer_info['email']], ['type' => 'sms', 'value' => $phone]],
 			];
-			
 			$this->load->model('extension/module/yespo');
 			$this->model_extension_module_yespo->sendCustomerData();
 			$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->contact_url);
-			
 			if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
 				$this->model_extension_module_yespo->setBadCustomer($customer_info['customer_id']);
 			}
+			return !empty($response['http_code']) && (int)$response['http_code'] < 400;
 		}
 	}
 
@@ -46,22 +45,17 @@ class ControllerExtensionModuleYespo extends Controller {
 
 	public function processOrder($route, $args, $output = null) {
 		$order_id = isset($args[0]) ? (int)$args[0] : 0;
-		
 		if ($order_id) {
 			$this->load->model('checkout/order');
 			$this->load->model('catalog/product');
 			$this->load->model('tool/image');
 			$this->load->model('extension/module/yespo');
-			
 			$order_info = $this->model_checkout_order->getOrder($order_id);
-			
 			if ($order_info) {
 				$in_progress_status = $this->config->get('config_processing_status');
 				$delivered_status = $this->config->get('config_complete_status');
 				$items = [];
-				
 				$product_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_product WHERE order_id = '" . (int)$order_id . "'");
-
 				if (is_array($product_query->rows)) {
 					foreach ($product_query->rows as $product) {
 						$product_info = $this->model_catalog_product->getProduct($product['product_id']);
@@ -77,17 +71,13 @@ class ControllerExtensionModuleYespo extends Controller {
 						];
 					}
 				}
-
 				$status = 'INITIALIZED';
-				
 				if (is_array($in_progress_status) && isset($order_info['order_status_id']) && in_array($order_info['order_status_id'], $in_progress_status)) {
 					$status = 'IN_PROGRESS';
 				}
-				
 				if (is_array($delivered_status) && isset($order_info['order_status_id']) && in_array($order_info['order_status_id'], $delivered_status)) {
 					$status = 'DELIVERED';
 				}
-
 				$order_data = [
 					'externalOrderId' => $order_info['order_id'],
 					'totalCost'       => (string)$this->currency->format($order_info['total'], $this->config->get('config_currency'), '', false),
@@ -102,15 +92,11 @@ class ControllerExtensionModuleYespo extends Controller {
 					'paymentMethod'   => isset($order_info['payment_method']) ? $order_info['payment_method'] : '',
 					'items'           => $items,
 				];
-
 				if (!empty($order_info['customer_id'])) {
 					$order_data['externalCustomerId'] = $order_info['customer_id'];
 				}
-
 				$request_body['orders'] = [$order_data];
-				
 				$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->orders_url);
-
 				if (!empty($response['http_code']) && in_array((int)$response['http_code'], [429, 500])) {
 					$this->model_extension_module_yespo->setBadOrder($order_info['order_id']);
 					return false;
@@ -124,23 +110,19 @@ class ControllerExtensionModuleYespo extends Controller {
 	public function checkBadOrdersAndCustomers() {
 		$limit = 20;
 		$interval = '15 MINUTE';
-		
 		$query_customers = $this->db->query("SELECT * FROM `" . DB_PREFIX . "yespo_failed_customers` WHERE `last_attempt` < (NOW() - INTERVAL " . $interval . ") LIMIT " . (int)$limit);
-
 		if ($query_customers->num_rows) {
 			foreach ($query_customers->rows as $row) {
-				$result = $this->editCustomer('', [$row['customer_id']], null);
+				$result = $this->sendCustomer((int)$row['customer_id']);
 				if ($result === true) {
 					$this->db->query("DELETE FROM `" . DB_PREFIX . "yespo_failed_customers` WHERE customer_id = '" . (int)$row['customer_id'] . "'");
 				}
 			}
 		}
-
 		$query_orders = $this->db->query("SELECT * FROM `" . DB_PREFIX . "yespo_failed_orders` WHERE `last_attempt` < (NOW() - INTERVAL " . $interval . ") LIMIT " . (int)$limit);
-
 		if ($query_orders->num_rows) {
 			foreach ($query_orders->rows as $row) {
-				$result = $this->processOrder('', [$row['order_id']], null);
+				$result = $this->processOrder('', [(int)$row['order_id']], null);
 				if ($result === true) {
 					$this->db->query("DELETE FROM `" . DB_PREFIX . "yespo_failed_orders` WHERE order_id = '" . (int)$row['order_id'] . "'");
 				}

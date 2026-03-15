@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title'] = 'Yespo Integration';
+$_['heading_title']	= 'Yespo CDP for OpenCart — Email Marketing & Automation';
 
 // Text
 $_['text_extension'] = 'Modules';
@@ -52,6 +52,7 @@ $_['button_sync'] = 'Synchronize';
 $_['button_support'] = 'Contact Support';
 
 // Error
+$_['error_permission']	= 'You do not have permission to make changes';
 $_['error_web_push'] = 'Unable to install web push script. Please contact support';
 $_['error_api_key'] = 'Invalid API key. Please try again using a valid API key with Full access permissions.';
 $_['error_api_key_2'] = 'Invalid API key. Please try again using a valid API key with Full access permissions. The configuration will restart, but any data already transferred will not be lost.';

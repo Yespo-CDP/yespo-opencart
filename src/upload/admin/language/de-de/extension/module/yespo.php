@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title']	= 'Yespo Integration';
+$_['heading_title']	= 'Yespo CDP for OpenCart — Email Marketing & Automation';
 
 // Text
 $_['text_extension']	= 'Modules';
@@ -52,6 +52,7 @@ $_['button_sync']	= 'Synchronisieren';
 $_['button_support']	= 'Support kontaktieren';
 
 // Error
+$_['error_permission']	= 'Sie haben keine ausreichenden Berechtigungen, um Änderungen vorzunehmen';
 $_['error_web_push']	= 'Web-Push-Skript konnte nicht installiert werden. Bitte wenden Sie sich an den Support';
 $_['error_api_key']	= 'Ungültiger API-Schlüssel. Bitte versuchen Sie es erneut mit einem gültigen API-Schlüssel mit Full-Access-Berechtigungen.';
 $_['error_api_key_2']	= 'Ungültiger API-Schlüssel. Bitte versuchen Sie es erneut mit einem gültigen API-Schlüssel mit Full-Access-Berechtigungen. Die Konfiguration wird neu gestartet, aber bereits übertragene Daten gehen nicht verloren.';

@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title']	= 'Интеграция Yespo';
+$_['heading_title']	= 'Yespo CDP for OpenCart — Email Marketing & Automation';
 
 // Text
 $_['text_extension']	= 'Модули';
@@ -52,6 +52,7 @@ $_['button_sync']	= 'Синхронизиране';
 $_['button_support']	= 'Свържете се със съпорта';
 
 // Error
+$_['error_permission']	= 'Нямате достатъчно права за извършване на промени';
 $_['error_web_push']	= 'Неуспешно инсталиране на web push скрипта. Моля, свържете се с поддръжката';
 $_['error_api_key']	= 'Невалиден API ключ. Моля, опитайте отново, като използвате валиден API ключ с достъп Full access.';
 $_['error_api_key_2']	= 'Невалиден API ключ. Моля, опитайте отново, като използвате валиден API ключ с достъп Full access. Конфигурацията ще започне отначало, но вече предадените данни няма да бъдат загубени.';

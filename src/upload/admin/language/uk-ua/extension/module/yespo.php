@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title'] = 'Yespo Integration';
+$_['heading_title']	= 'Yespo CDP for OpenCart — Email Marketing & Automation';
 
 // Text
 $_['text_extension'] = 'Модулі';
@@ -52,6 +52,7 @@ $_['button_sync'] = 'Синхронізувати';
 $_['button_support'] = 'Зв\'язатися з підтримкою';
 
 // Error
+$_['error_permission'] = 'У вас недостатньо прав для внесення змін';
 $_['error_web_push'] = 'Неможливо встановити Web Push скрипт. Зверніться до служби підтримки';
 $_['error_api_key'] = 'Невалідний АРІ ключ. Спробуйте ще раз, використовуючи дійсний АРІ ключ з Full access доступом';
 $_['error_api_key_2'] = 'Невалідний АРІ ключ. Спробуйте ще раз, використовуючи дійсний АРІ ключ з Full access доступом. Конфігурація почнеться спочатку, вже передані дані не будуть втрачені.';

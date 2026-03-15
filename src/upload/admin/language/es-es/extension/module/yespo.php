@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title']	= 'Integración Yespo';
+$_['heading_title']	= 'Yespo CDP for OpenCart — Email Marketing & Automation';
 
 // Text
 $_['text_extension']	= 'Módulos';

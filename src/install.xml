@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <modification>
-	<name>Yespo Integration</name>
-	<code>yespo_integration</code>
+	<name>Yespo CDP for OpenCart</name>
+	<code>yespo_cdp</code>
 	<version>1.0</version>
 	<author>yespo.io</author>
 	<link>https://yespo.io/</link>
@@ -14,14 +14,11 @@
 			if (!empty($yespo_site_script)) {
 				$data['yespo_site_script'] = html_entity_decode($yespo_site_script);
 			}
-			
 			$yespo_web_push_script = $this->config->get('yespo_web_push_script');
 			if (!empty($yespo_web_push_script)) {
 				$data['yespo_web_push_script'] = html_entity_decode($yespo_web_push_script);
 			}
-			
 			$route = !empty($this->request->get['route']) ? $this->request->get['route'] : '';
-			
 			$begin_checkout_routes = [
 				'checkout/cart',
 				'checkout/checkout',
@@ -42,19 +39,15 @@
 				'tmdqc/tmdcheckout',
 				'quickcheckout/checkout',
 			];
-			
 			if (in_array($route, $begin_checkout_routes)) {
 				$data['yespo_event'] = "<script>document.addEventListener('DOMContentLoaded', function() {if (typeof eS === 'function') { eS('sendEvent', 'StatusCartPage'); }})</script>";
 			}
-			
 			if (in_array($route, ['common/home', ''])) {
 				$data['yespo_event'] = "<script>document.addEventListener('DOMContentLoaded', function() {if (typeof eS === 'function') { eS('sendEvent', 'MainPage'); }})</script>";
 			}
-			
 			if (in_array($route, ['error/not_found'])) {
 				$data['yespo_event'] = "<script>document.addEventListener('DOMContentLoaded', function() {if (typeof eS === 'function') { eS('sendEvent', 'NotFound'); }})</script>";
 			}
-			
 			if (isset($this->session->data['customer_id']) && empty($this->session->data['yespo_customer_data'])) {
 				$this->load->model('extension/module/yespo');
 				$this->model_extension_module_yespo->sendCustomerData();
@@ -222,7 +215,7 @@
 			<script>
 			if (typeof eS !== 'undefined') {
 				category_page_event = <?php echo $yespo_event; ?>;
-				eS('sendEvent', 'CategoryPage', search_page_event);
+				eS('sendEvent', 'CategoryPage', category_page_event);
 			}			
 			</script>
 			<?php } ?>

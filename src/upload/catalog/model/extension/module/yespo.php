@@ -1,20 +1,8 @@
 <?php
 class ModelExtensionModuleYespo extends Model {
-
 	public function makeLogRequest($request_data = [], $event_url = 'https://events.yespo.io/logs/v1/plugin') {
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($request_data));
-		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json; charset=UTF-8', 'Content-Type: application/json; charset=UTF-8']);
-		curl_setopt($ch, CURLOPT_URL, $event_url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-		curl_exec($ch);
-		if (curl_errno($ch)) {
-			$this->log->write('Yespo API makeLogRequest cURL Error (' . curl_errno($ch) . '): ' . curl_error($ch));
-		}
-		curl_close($ch);
+		$this->load->library('yespo_http');
+		$this->yespo_http->requestJson('POST', $event_url, $request_data, '');
 	}
 
 	public function makeRequest($request_data = [], $event_url = '', $method = 'POST') {
@@ -22,71 +10,25 @@ class ModelExtensionModuleYespo extends Model {
 		if (empty($password)) {
 			return;
 		}
-		$ch = curl_init();
-		if ($method != 'GET') {
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($request_data, JSON_UNESCAPED_UNICODE));
-		} else {
-			$query = http_build_query($request_data);
-			$event_url .= ((strpos($event_url, '?') !== false) ? '&' : '?') . $query;
-		}
-		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json; charset=UTF-8', 'Content-Type: application/json; charset=UTF-8']);
-		curl_setopt($ch, CURLOPT_URL, $event_url);
-		curl_setopt($ch, CURLOPT_USERPWD, 'user:' . $password);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-		$response = curl_exec($ch);
-		if (curl_errno($ch)) {
-			$this->log->write('Yespo API makeRequest cURL Error (' . curl_errno($ch) . '): ' . curl_error($ch));
-		}
-		$response_json = json_decode($response, true);
-		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
-		if ($response == '') {
-			$response_json = [];
-		}
-		if ($response_json === null) {
-			return [
-				'error' => 'bad_json_format',
-				'raw_response' => $response,
-			];
-		}
-		if ($http_code >= 400) {
-			if (!isset($response_json['error'])) {
-				if ($http_code == 401) {
-					$response_json['error'] = 'unauthorized';
-				} elseif ($http_code == 400) {
-					$response_json['error'] = 'bad_request';
-				} else {
-					$response_json['error'] = 'http_error_' . $http_code;
-				}
-			}
-		}
-		$response_json['http_code'] = $http_code;
-		return $response_json;
+		$this->load->library('yespo_http');
+		return $this->yespo_http->requestJson($method, $event_url, $request_data, $password);
 	}
 
 	public function trackEvent($request_data = []) {
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($request_data, JSON_UNESCAPED_UNICODE));
-		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json; charset=UTF-8', 'Content-Type: application/json; charset=UTF-8']);
-		curl_setopt($ch, CURLOPT_URL, 'https://tracker.yespo.io/api/v2');
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+		$this->load->library('yespo_http');
+		$headers = [
+			'Accept: application/json; charset=UTF-8',
+			'Content-Type: application/json; charset=UTF-8'
+		];
 		if (isset($this->request->server['HTTP_USER_AGENT'])) {
-			curl_setopt($ch, CURLOPT_USERAGENT, $this->request->server['HTTP_USER_AGENT']);
-		} else {
-			return;
+			$headers[] = 'User-Agent: ' . $this->request->server['HTTP_USER_AGENT'];
 		}
-		$response = curl_exec($ch);
-		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		$response_json['text'] = $response;
-		$response_json['http_code'] = $http_code;
-		if (curl_errno($ch)) {
-			$this->log->write('Yespo API trackEvent cURL Error (' . curl_errno($ch) . '): ' . curl_error($ch));
+		$response = $this->yespo_http->requestJson('POST', 'https://tracker.yespo.io/api/v2', $request_data, '', $headers);
+		$response_json = [
+			'text'      => $response['raw_response'],
+			'http_code' => $response['http_code']
+		];
+		if (!empty($response['error']) && strpos($response['error'], 'curl_error_') !== false) {
 			$log_data = [
 				'orgId'        => (int)$this->config->get('yespo_orgid'),
 				'typeCMS'      => 'OpenCart',
@@ -97,10 +39,9 @@ class ModelExtensionModuleYespo extends Model {
 			];
 			$this->makeLogRequest($log_data);
 		}
-		curl_close($ch);
 		return $response_json;
 	}
-
+	
 	public function setBadOrder($order_id) {
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "yespo_failed_orders` WHERE attempt_count > 5");
 		$query = $this->db->query("SELECT id FROM `" . DB_PREFIX . "yespo_failed_orders` WHERE order_id = '" . (int)$order_id . "' LIMIT 1");
@@ -126,7 +67,6 @@ class ModelExtensionModuleYespo extends Model {
 			'siteId' => $this->config->get('yespo_siteid'),
 			'datetime' => (int)(microtime(true) * 1000),
 		];
-
 		if (!empty($this->request->cookie['sc'])) {
 			$general_info['cookies']['sc'] = $this->request->cookie['sc'];
 		}
@@ -136,13 +76,12 @@ class ModelExtensionModuleYespo extends Model {
 	public function getCustomerDataGeneralInfo($order_info = []) {
 		if ($this->customer->isLogged()) {
 			$general_info = [
-				'externalCustomerId' => $this->customer->isLogged(),
+				'externalCustomerId' => (int)$this->customer->getId(),
 				'user_email'         => $this->customer->getEmail(),
 				'user_name'          => $this->customer->getFirstname() . ($this->customer->getLastName() ? ' ' . $this->customer->getLastName() : ''),
 				'user_phone'         => preg_replace('/[^0-9]/', '', (string)$this->customer->getTelephone()),
 			];
 		}
-
 		if ($order_info) {
 			$general_info = [
 				'user_email' => $order_info['email'],
@@ -154,10 +93,8 @@ class ModelExtensionModuleYespo extends Model {
 				$general_info['externalCustomerId'] = $order_info['customer_id'];
 			}
 		}
-
 		$general_info['siteId'] = $this->config->get('yespo_siteid');
 		$general_info['datetime'] = (int)(microtime(true) * 1000);
-		
 		if (!empty($this->request->cookie['sc'])) {
 			$general_info['cookies']['sc'] = $this->request->cookie['sc'];
 		}
@@ -167,98 +104,77 @@ class ModelExtensionModuleYespo extends Model {
 	public function addWishlist($product_info) {
 		$tracking_data = [];
 		$tracking_data['GeneralInfo']['eventName'] = 'AddToWishlist';
-		
 		$general_info = $this->getGeneralInfo();
 		if (!empty($general_info)) {
 			$tracking_data['GeneralInfo'] = array_merge($tracking_data['GeneralInfo'], $general_info);
 		}
-
 		$tracking_data['AddToWishlist'] = [];
-
 		$tracking_data['AddToWishlist']['Product'] = [
-			'productKey' => $product_info['product_id'],
+			'productKey' => (string)$product_info['product_id'],
 			'price'      => (string)$this->currency->format($product_info['special'] ? $product_info['special'] : $product_info['price'], $this->session->data['currency'], '', false),
 			'isInStock'  => (string)($product_info['quantity'] > 0),
 		];
-		
  		$this->trackEvent($tracking_data);
 	}
 
 	public function sendCustomerData($order_info = []) {
 		$tracking_data = [];
 		$tracking_data['GeneralInfo']['eventName'] = 'CustomerData';
-
 		$general_info = $this->getCustomerDataGeneralInfo($order_info);
-
 		if (!empty($general_info)) {
 			$tracking_data['GeneralInfo'] = array_merge($tracking_data['GeneralInfo'], $general_info);
 		}
-
 		$this->trackEvent($tracking_data);
 		usleep(200000);
 	}
 
 	public function sendCart() {
 		$this->session->data['yespo_guid'] = uniqid();
-
 		$tracking_data = [];
 		$tracking_data['GeneralInfo']['eventName'] = 'StatusCart';
-
 		$general_info = $this->getGeneralInfo();
 		if (!empty($general_info)) {
 			$tracking_data['GeneralInfo'] = array_merge($tracking_data['GeneralInfo'], $general_info);
 		}
-
 		$tracking_data['StatusCart'] = [];
-
 		if (!empty($this->session->data['yespo_guid'])) {
 			$tracking_data['StatusCart']['GUID'] = $this->session->data['yespo_guid'];
 		}
-
 		$tracking_data['StatusCart']['Products'] = [];
-
 		$products = $this->cart->getProducts();
 		foreach ($products as $product) {
 			$cart_product = [
-				'productKey' => $product['product_id'],
+				'productKey' => (string)$product['product_id'],
 				'price'      => (string)$this->currency->format($product['price'], $this->session->data['currency'], '', false),
 				'quantity'   => (int)$product['quantity'],
 				'price_currency_code' => $this->session->data['currency'],
 			];
 			$tracking_data['StatusCart']['Products'][] = $cart_product;
 		}
-	 	
 		$this->trackEvent($tracking_data);
 	}
 
 	public function sendOrder($order_id, $order_info) {
-		
 		$this->sendCustomerData($order_info);
-		
 		$tracking_data = [];
 		$tracking_data['GeneralInfo'] = [
 			'eventName' => 'PurchasedItems',
 			'siteId'    => $this->config->get('yespo_siteid'),
 			'datetime'  => (int)(microtime(true) * 1000),
 		];
-
 		$general_info = $this->getGeneralInfo();
-
 		if (!empty($this->request->cookie['sc'])) {
 			$general_info['cookies']['sc'] = $this->request->cookie['sc'];
 		}
-
 		if (!empty($general_info)) {
 			$tracking_data['GeneralInfo'] = array_merge($tracking_data['GeneralInfo'], $general_info);
 		}
-
 		$tracking_data['PurchasedItems'] = [];
 		$tracking_data['PurchasedItems']['OrderNumber'] = (string)$order_id;
 		if (!empty($this->session->data['yespo_guid'])) {
 			$tracking_data['PurchasedItems']['GUID'] = $this->session->data['yespo_guid'];
 		}
 		$tracking_data['PurchasedItems']['TrackedOrderId'] = uniqid();
-
 		$tracking_data['PurchasedItems']['Products'] = [];
 		$order_product_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_product WHERE order_id = '" . (int)$order_id . "'");
 		foreach ($order_product_query->rows as $product) {
