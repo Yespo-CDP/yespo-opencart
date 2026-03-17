@@ -353,7 +353,9 @@ class ControllerExtensionModuleYespo extends Controller {
 		
 		foreach ($orders as $order) {
 			$items = [];
+			
 			$products = $this->model_sale_order->getOrderProducts($order['order_id']);
+			
 			if (is_array($products)) {
 				foreach ($products as $product) {
 					$items[] = [
@@ -364,6 +366,7 @@ class ControllerExtensionModuleYespo extends Controller {
 					];
 				}
 			}
+			
 			$status = 'INITIALIZED';
 			if (is_array($in_progress_status) && in_array($order['order_status_id'], $in_progress_status)) {
 				$status = 'IN_PROGRESS';
@@ -371,6 +374,7 @@ class ControllerExtensionModuleYespo extends Controller {
 			if (is_array($delivered_status) && in_array($order['order_status_id'], $delivered_status)) {
 				$status = 'DELIVERED';
 			}
+			
 			$order_data = [
 				'externalOrderId' => $order['order_id'],
 				'totalCost'       => $this->currency->format($order['total'], $this->config->get('config_currency'), '', false),
@@ -385,9 +389,11 @@ class ControllerExtensionModuleYespo extends Controller {
 				'paymentMethod'   => $order['payment_method'],
 				'items'           => $items,
 			];
+			
 			if ($order['customer_id'] > 0) {
 				$order_data['externalCustomerId'] = $order['customer_id'];
 			}
+			
 			$orders_payload[] = $order_data;
 		}
 		
@@ -396,6 +402,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->orders_url);
 		
 		$failed_count = 0;
+		
 		if (isset($response['failedOrders']) && is_array($response['failedOrders'])) {
 			$failed_count = count($response['failedOrders']);
 		}
@@ -406,7 +413,7 @@ class ControllerExtensionModuleYespo extends Controller {
 			} else {
 				$json['error'] = $this->language->get('error_connection');
 			}
-			$this->logApiEvent('SEND_ORDERS_BULK_FAILED', 'ERROR', ['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'responseBody' => $response]);
+			$this->logApiEvent('SEND_ORDERS_BULK_FAILED', 'ERROR', ['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $response]);
 			$this->respondJson($json);
 			return;
 		}

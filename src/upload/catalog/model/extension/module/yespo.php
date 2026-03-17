@@ -28,17 +28,18 @@ class ModelExtensionModuleYespo extends Model {
 			'text'      => $response['raw_response'],
 			'http_code' => $response['http_code']
 		];
-		if (!empty($response['error']) && strpos($response['error'], 'curl_error_') !== false) {
-			$log_data = [
-				'orgId'        => (int)$this->config->get('yespo_orgid'),
-				'typeCMS'      => 'OpenCart',
-				'errorMessage' => '',
-				'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_data, 'responseBody' => $response_json]),
-				'message'      => 'TRACK_EVENT',
-				'log_level'    => 'INFO',
-			];
-			$this->makeLogRequest($log_data);
-		}
+		
+		$log_data = [
+			'orgId'        => (int)$this->config->get('yespo_orgid'),
+			'typeCMS'      => 'OpenCart',
+			'errorMessage' => '',
+			'data'         => json_encode(['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_data, 'responseBody' => $response_json]),
+			'message'      => 'TRACK_EVENT',
+			'log_level'    => 'INFO',
+		];
+		
+		$this->makeLogRequest($log_data);
+		
 		return $response_json;
 	}
 	
