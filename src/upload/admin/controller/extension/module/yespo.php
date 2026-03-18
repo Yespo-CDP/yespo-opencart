@@ -448,34 +448,45 @@ class ControllerExtensionModuleYespo extends Controller {
 	
 	public function getSiteScript() {
 		$json = ['success' => false];
+		
 		if ($this->request->server['REQUEST_METHOD'] !== 'POST' || !$this->validate()) {
 			$json['error'] = 'permission_or_method';
 			$this->respondJson($json);
 			return;
 		}
+		
 		$this->load->model('extension/module/yespo');
 		$this->load->model('setting/setting');
+		
 		$domain = $this->request->server['SERVER_NAME'];
 		$request_body = ['domain' => $domain];
+		
 		$response = $this->model_extension_module_yespo->makeRequest($request_body, $this->domains_url);
+		
 		if (empty($response['http_code']) || !in_array($response['http_code'], [200, 201])) {
 			$json['error'] = true;
 			$this->logApiEvent('ADD_DOMAIN_FAILED', 'ERROR', ['domain' => $domain, 'requestBody' => $request_body, 'responseBody' => $response]);
 			$this->respondJson($json);
 			return;
 		}
+		
 		$this->logApiEvent('ADD_DOMAIN_SUCCESS', 'INFO', ['domain' => $domain]);
 		$this->model_setting_setting->editSettingValue('yespo', 'yespo_siteid', $response['siteId']);	
 		$json['siteid'] = $response['siteId'];	
+		
 		$script_response = $this->model_extension_module_yespo->makePlainRequest($request_body, $this->site_script_url);
+		
 		if (empty($script_response['text']) || empty($script_response['http_code']) || !in_array($script_response['http_code'], [200])) {
 			$this->logApiEvent('GET_SCRIPT_FAILED', 'ERROR', ['domain' => $domain, 'requestBody' => $request_body, 'responseBody' => $script_response]);
 			$this->respondJson($json);
 			return;
 		}
+		
 		$this->model_setting_setting->editSettingValue('yespo', 'yespo_site_script', $script_response['text']);
 		$json['success'] = true;
+		
 		$this->logApiEvent('GET_SCRIPT_SUCCESS', 'INFO', ['domain' => $domain]);
+		
 		$this->respondJson($json);
 	}
 	
