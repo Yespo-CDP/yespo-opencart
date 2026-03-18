@@ -102,7 +102,7 @@ The following table describes how OpenCart customer data is mapped to the Yespo 
 #### 6.2. Order Field Mapping
 The following table describes how OpenCart order data is mapped to the Yespo API payload during order synchronization:
 
-| Yespo Payload Field | OpenCart Database Field | Notes |
+| Yespo Payload Field | OpenCart Database Field | Transformation / Notes |
 | :--- | :--- | :--- |
 | `externalOrderId` | `order_id` | Integer. |
 | `externalCustomerId`| `customer_id` | Included only if `customer_id > 0` |
