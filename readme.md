@@ -29,17 +29,18 @@ Once the API key is successfully validated, the frontend interface orchestrates 
 ### 2. Automated Web Tracking Setup
 The module automatically configures Yespo's Web Tracking capabilities through a sequential API flow.
 * **Step 1: Domain Registration**
-  * **Method:** `POST /api/v1/site/domains`
-  * **Payload:** The plugin sends the store's `domain`.
-  * **Happy Flow:** The domain is successfully registered, and the API returns a unique Site ID. The system logs a success event.
+	* **Method:** `POST /api/v1/site/domains`
+	* **Payload:** The plugin sends the store's `domain`.
+	* **Happy Flow:** The domain is successfully registered, and the API returns a unique Site ID. The system logs a success event.
 * **Step 2: Script Retrieval & Implementation**
-  * **Method:** `GET /api/v1/site/script`
-  * **Trigger:** Initiated immediately upon successful domain registration.
-  * **Happy Flow:** The API returns the text of the tracking script. The script is then dynamically injected after the storefront's `<body>` tag via OpenCart's OCMOD.
-* **Error Handling:** Failures at any stage are intercepted. The system logs specific errors. Even if the OCMOD injection fails, the storefront continues to operate normally without breaking frontend performance. If the script installation fails the user will be able to try agaim.
+	* **Method:** `GET /api/v1/site/script`
+	* **Trigger:** Initiated immediately upon successful domain registration.
+	* **Happy Flow:** The API returns the text of the tracking script. The script is then dynamically injected after the storefront's `<body>` tag via OpenCart's OCMOD.
+* **Error Handling:** Failures at any stage are intercepted. The system logs specific errors. Even if the OCMOD injection fails, the storefront continues to operate normally without breaking frontend performance. If the script installation fails the user will be able to try again.
 * **Behavioral Events & Triggers:** After successful configuration, the following events are automatically tracked:
-  * *Backend Events:* `StatusCart`, `PurchasedItems`, `CustomerData`, `AddToWishlist`.
-  * *Frontend Events:* `StatusCartPage`, `MainPage`, `NotFound`, `ProductPage`, `SearchRequest`, `CategoryPage`.
+	* *Backend Events:* `StatusCart`, `PurchasedItems`, `CustomerData`, `AddToWishlist`.
+	* *Frontend Events:* `StatusCartPage`, `MainPage`, `NotFound`, `ProductPage`, `SearchRequest`, `CategoryPage`.
+* **Important Note on Product Variants:** Across all tracking events, only the primary `product_id` is utilized. OpenCart's core architecture treats product options (e.g., size, color) as modifiers attached to a main product, rather than standalone entities with distinct, uniquely identifiable IDs. Consequently, reliably extracting unique identifiers for specific option combinations to track them individually or to construct a comprehensive product feed for every variant is technically complex and unsupported natively without profound custom modifications.
 
 ### 3. Automated Web Push Configuration
 The module automatically configures Yespo's Web Push capabilities through a sequential API flow.
@@ -62,7 +63,7 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 	* **Payload:** Mapped object containing `externalCustomerId`, `firstName`, `lastName`, and `channels` (email, and sanitized SMS phone number).
 	* **Admin Deletion:** When contacts are deleted by an administrator, they are processed via the `DELETE` method with the parameter `erase => true` to ensure complete removal.
 * **Bulk Method:** `POST /api/v1/contacts`
-	* **Trigger:** Background script using batched queries (`LIMIT/OFFSET`), executed periodically via Cron.
+	* **Trigger:** Historical data is loaded automatically during the module installation.
 	* **Batch Size:** 2000 contacts per request.
 	* **Batch Execution:** The next batch is sent immediately after the previous one completes.
 	* **Happy Flow:** Batches are accepted by the API, logging success.
@@ -73,7 +74,7 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 	* **Trigger:** OpenCart event `checkout/order/addOrderHistory/after`.
 	* **Payload:** Object containing `externalOrderId`, `externalCustomerId`, `totalCost`, mapped order status, and an `items` array (`externalItemId`, `name`, `cost`, `quantity`).
 * **Bulk Method:** `POST /api/v1/orders` (Array Payload)
-	* **Trigger:** Background batched execution for historical data, executed periodically via Cron.
+	* **Trigger:** Historical data is loaded automatically during the module installation.
 	* **Batch Size:** 300 orders per request.
 	* **Batch Execution:** The next batch is sent immediately after the previous one completes.
 	* **Happy Flow:** Orders are mapped and accepted, triggering the success log.
@@ -84,6 +85,55 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 * The module includes an isolated logging engine specifically for Yespo API interactions.
 * It silently captures all connectivity issues, data validation errors, and file generation faults without exposing them to the frontend user.
 * This provides developers with an actionable audit trail for debugging without affecting the store's conversion rates.
+
+### 6. Data Mapping Reference
+
+#### 6.1. Contact Field Mapping
+The following table describes how OpenCart customer data is mapped to the Yespo API payload during contact synchronization:
+
+| Yespo Payload Field | OpenCart Database Field | Transformation / Notes |
+| :--- | :--- | :--- |
+| `externalCustomerId`| `customer_id` | Integer. |
+| `firstName` | `firstname` | |
+| `lastName` | `lastname` | |
+| `email` | `email` | |
+| `phone` | `telephone` | Non-numeric characters are stripped |
+
+#### 6.2. Order Field Mapping
+The following table describes how OpenCart order data is mapped to the Yespo API payload during order synchronization:
+
+| Yespo Payload Field | OpenCart Database Field | Notes |
+| :--- | :--- | :--- |
+| `externalOrderId` | `order_id` | Integer. |
+| `externalCustomerId`| `customer_id` | Included only if `customer_id > 0` |
+| `totalCost` | `total` | Formatted according to OpenCart currency settings (without the currency symbol) |
+| `date` | `date_added` | Converted to UTC ISO 8601 format (`Y-m-d\TH:i:s\Z`) |
+| `currency` | Config `config_currency` | Currency code (e.g., USD, EUR) |
+| `email` | `email` | |
+| `phone` | `telephone` | Non-numeric characters are stripped |
+| `firstName` | `firstname` | |
+| `lastName` | `lastname` | |
+| `deliveryMethod` | `shipping_method` | |
+| `paymentMethod` | `payment_method` | |
+
+#### 6.3. Order Items Mapping
+Nested within the Order payload is the `items` array. Here is the mapping for individual products:
+
+| Yespo Item Field | OpenCart Product Field | Transformation / Notes |
+| :--- | :--- | :--- |
+| `externalItemId` | `product_id` | Integer |
+| `name` | `name` | |
+| `quantity` | `quantity` | Integer |
+| `cost` | `price` | Formatted according to OpenCart currency settings (without the currency symbol) |
+
+#### 6.4. Order Status Mapping
+OpenCart order statuses are dynamically mapped to Yespo statuses based on the store's global checkout settings.
+
+| OpenCart Status Setting | Yespo Status | Condition |
+| :--- | :--- | :--- |
+| *None / Default* | `INITIALIZED` | Fallback status if the order does not match processing or complete statuses. |
+| Processing Statuses (`config_processing_status`) | `IN_PROGRESS` | Applies if `order_status_id` matches any status in the processing array. |
+| Complete Statuses (`config_complete_status`) | `DELIVERED` | Applies if `order_status_id` matches any status in the complete array. |
 
 ---
 
