@@ -46,7 +46,7 @@ The module automatically configures Yespo's Web Tracking capabilities through a 
 The module automatically configures Yespo's Web Push capabilities through a sequential API flow.
 * **Step 1: Domain Registration**
   * **Method:** `POST /api/v1/domain/web-push`
-  * **Payload:** The plugin sends the store's `domain`, the intended `serviceWorkerName` (e.g., `sw-yespo.js`), and the `serviceWorkerScope` (typically `/`).
+  * **Payload:** The plugin sends the store's `domain`, the intended `serviceWorkerName` (e.g., `sw-yespo.js`), the `serviceWorkerScope` (typically `/`) and the `serviceWorkerPath` (same as `serviceWorkerScope`).
   * **Happy Flow:** If Yespo successfully registers the domain, it logs a success event.
 * **Step 2: Script & Service Worker Retrieval**
   * **Method:** `GET /api/v1/domain/web-push/script`
@@ -55,7 +55,7 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 * **Step 3: Implementation & File Generation**
   * **Service Worker Placement:** The plugin takes the raw Service Worker content returned by the API, automatically creates the physical file, and saves it directly to the root directory of your OpenCart installation.
   * **HTML Injection:** The retrieved script is dynamically injected after the storefront's `<body>` tag via OCMOD. This enables the native subscription prompt for visitors.
-* **Error Handling:** Failures at any stage are intercepted. The system logs specific errors. If the script or service worker installation fails the user will be able to try agaim.
+* **Error Handling:** Failures at any stage are intercepted. The system logs specific errors. If the script or service worker installation fails, the user will be able to try again.
 
 ### 4. Contact Synchronization (Real-time & Bulk)
 * **Real-time Methods:** `POST /api/v1/contact` (Create/Update) and `DELETE /api/v1/contact` (Delete).
