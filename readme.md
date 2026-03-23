@@ -16,7 +16,7 @@ This module is designed to work silently and efficiently in the background. Belo
 * **Happy Flow:** The API returns account metadata including `orgId` and `organisationName`. The module saves these credentials to OpenCart's settings, updates the UI to confirm the connection, and triggers the success log.
 * **Error Handling:** If validation fails (e.g., 401 Unauthorized), the synchronization halts immediately. The UI displays an error to the admin, and the system records an error in the dedicated integration log.
 
-### 2 UI Process Flow & Auto-Recovery Mechanism:
+### 2. UI Process Flow & Auto-Recovery Mechanism:
 Once the API key is successfully validated, the frontend interface orchestrates a fully automated setup sequence:
 * **Parallel Execution:** The UI instantly triggers three asynchronous AJAX processes in parallel:
   1. Web Tracking Configuration (`getSiteScript`)
