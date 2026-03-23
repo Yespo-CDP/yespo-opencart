@@ -59,7 +59,7 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 
 ### 5. Contact Synchronization (Real-time & Bulk)
 * **Real-time Methods:** `POST /api/v1/contact` (Create/Update) and `DELETE /api/v1/contact` (Delete).
-	* **Trigger:** OpenCart's native event triggers (`customer/addCustomer/after`, `customer/editCustomer/after`, `customer/deleteCustomer/after`).
+	* **Trigger:** OpenCart's native events (`customer/addCustomer/after`, `customer/editCustomer/after`, `customer/deleteCustomer/after`).
 	* **Payload:** Mapped object containing `externalCustomerId`, `firstName`, `lastName`, and `channels` (email, and sanitized SMS phone number).
 	* **Admin Deletion:** When contacts are deleted by an administrator, they are processed via the `DELETE` method with the parameter `erase => true` to ensure complete removal.
 * **Bulk Method:** `POST /api/v1/contacts`
