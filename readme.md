@@ -16,7 +16,7 @@ This module is designed to work silently and efficiently in the background. Belo
 * **Happy Flow:** The API returns account metadata including `orgId` and `organisationName`. The module saves these credentials to OpenCart's settings, updates the UI to confirm the connection, and triggers the success log.
 * **Error Handling:** If validation fails (e.g., 401 Unauthorized), the synchronization halts immediately. The UI displays an error to the admin, and the system records an error in the dedicated integration log.
 
-**UI Process Flow & Auto-Recovery Mechanism:**
+### 2 UI Process Flow & Auto-Recovery Mechanism:
 Once the API key is successfully validated, the frontend interface orchestrates a fully automated setup sequence:
 * **Parallel Execution:** The UI instantly triggers three asynchronous AJAX processes in parallel:
   1. Web Tracking Configuration (`getSiteScript`)
@@ -26,7 +26,7 @@ Once the API key is successfully validated, the frontend interface orchestrates 
 * **Automatic Retry (Auto-Recovery):** To handle temporary network hiccups or API rate limits, the frontend implements an automatic retry mechanism. If any process (tracking script retrieval, web push registration, or a specific data batch) fails or times out, the system automatically retries the failed request up to **5 times** (with a 3-second delay between attempts).
 * **Manual Intervention:** If all 5 automatic retries are exhausted, the process halts, logs the final error, and presents a "Try Again" button. This allows the administrator to manually resume the exact failed step (e.g., resuming a historical data import from the exact page where it stopped) without restarting the entire configuration process.
 
-### 2. Automated Web Tracking Setup
+### 3. Automated Web Tracking Setup
 The module automatically configures Yespo's Web Tracking capabilities through a sequential API flow.
 * **Step 1: Domain Registration**
 	* **Method:** `POST /api/v1/site/domains`
@@ -42,7 +42,7 @@ The module automatically configures Yespo's Web Tracking capabilities through a 
 	* *Frontend Events:* `StatusCartPage`, `MainPage`, `NotFound`, `ProductPage`, `SearchRequest`, `CategoryPage`.
 * **Important Note on Product Variants:** Across all tracking events, only the primary `product_id` is utilized. OpenCart's core architecture treats product options (e.g., size, color) as modifiers attached to a main product, rather than standalone entities with distinct, uniquely identifiable IDs. Consequently, reliably extracting unique identifiers for specific option combinations to track them individually or to construct a comprehensive product feed for every variant is technically complex and unsupported natively without profound custom modifications.
 
-### 3. Automated Web Push Configuration
+### 4. Automated Web Push Configuration
 The module automatically configures Yespo's Web Push capabilities through a sequential API flow.
 * **Step 1: Domain Registration**
   * **Method:** `POST /api/v1/domain/web-push`
@@ -57,7 +57,7 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
   * **HTML Injection:** The retrieved script is dynamically injected after the storefront's `<body>` tag via OCMOD. This enables the native subscription prompt for visitors.
 * **Error Handling:** Failures at any stage are intercepted. The system logs specific errors. If the script or service worker installation fails, the user will be able to try again.
 
-### 4. Contact Synchronization (Real-time & Bulk)
+### 5. Contact Synchronization (Real-time & Bulk)
 * **Real-time Methods:** `POST /api/v1/contact` (Create/Update) and `DELETE /api/v1/contact` (Delete).
 	* **Trigger:** OpenCart's native hooks (`customer/addCustomer/after`, `customer/editCustomer/after`, `customer/deleteCustomer/after`).
 	* **Payload:** Mapped object containing `externalCustomerId`, `firstName`, `lastName`, and `channels` (email, and sanitized SMS phone number).
@@ -69,7 +69,7 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 	* **Happy Flow:** Batches are accepted by the API, logging success.
 * **Error Handling:** Any malformed data, API timeouts, or rejection responses trigger a log, ensuring no data loss goes unnoticed.
 
-### 5. Order Synchronization (Real-time & Bulk)
+### 6. Order Synchronization (Real-time & Bulk)
 * **Real-time Method:** `POST /api/v1/orders`
 	* **Trigger:** OpenCart event `checkout/order/addOrderHistory/after`.
 	* **Payload:** Object containing `externalOrderId`, `externalCustomerId`, `totalCost`, mapped order status, and an `items` array (`externalItemId`, `name`, `cost`, `quantity`).
@@ -81,14 +81,14 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 * **Status Mapping:** Module translates OpenCart statuses (using `config_processing_status` and `config_complete_status`) to Yespo equivalents for accurate RFM analysis and trigger campaigns.
 * **Error Handling:** Validation errors or API unavailability writing to system logs.
 
-### 6. Background Logging System
+### 7. Background Logging System
 * The module includes an isolated logging engine specifically for Yespo API interactions.
 * It silently captures all connectivity issues, data validation errors, and file generation faults without exposing them to the frontend user.
 * This provides developers with an actionable audit trail for debugging without affecting the store's conversion rates.
 
-### 6. Data Mapping Reference
+### 8. Data Mapping Reference
 
-#### 6.1. Contact Field Mapping
+#### 8.1. Contact Field Mapping
 The following table describes how OpenCart customer data is mapped to the Yespo API payload during contact synchronization:
 
 | Yespo Payload Field | OpenCart Database Field | Transformation / Notes |
@@ -99,7 +99,7 @@ The following table describes how OpenCart customer data is mapped to the Yespo 
 | `email` | `email` | |
 | `phone` | `telephone` | Non-numeric characters are stripped |
 
-#### 6.2. Order Field Mapping
+#### 8.2. Order Field Mapping
 The following table describes how OpenCart order data is mapped to the Yespo API payload during order synchronization:
 
 | Yespo Payload Field | OpenCart Database Field | Transformation / Notes |
@@ -116,7 +116,7 @@ The following table describes how OpenCart order data is mapped to the Yespo API
 | `deliveryMethod` | `shipping_method` | |
 | `paymentMethod` | `payment_method` | |
 
-#### 6.3. Order Items Mapping
+#### 8.3. Order Items Mapping
 Nested within the Order payload is the `items` array. Here is the mapping for individual products:
 
 | Yespo Item Field | OpenCart Product Field | Transformation / Notes |
@@ -126,7 +126,7 @@ Nested within the Order payload is the `items` array. Here is the mapping for in
 | `quantity` | `quantity` | Integer |
 | `cost` | `price` | Formatted according to OpenCart currency settings (without the currency symbol) |
 
-#### 6.4. Order Status Mapping
+#### 8.4. Order Status Mapping
 OpenCart order statuses are dynamically mapped to Yespo statuses based on the store's global checkout settings.
 
 | OpenCart Status Setting | Yespo Status | Condition |
