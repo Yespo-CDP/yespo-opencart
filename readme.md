@@ -59,7 +59,7 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 
 ### 5. Contact Synchronization (Real-time & Bulk)
 * **Real-time Methods:** `POST /api/v1/contact` (Create/Update) and `DELETE /api/v1/contact` (Delete).
-	* **Trigger:** OpenCart's native hooks (`customer/addCustomer/after`, `customer/editCustomer/after`, `customer/deleteCustomer/after`).
+	* **Trigger:** OpenCart's native event triggers (`customer/addCustomer/after`, `customer/editCustomer/after`, `customer/deleteCustomer/after`).
 	* **Payload:** Mapped object containing `externalCustomerId`, `firstName`, `lastName`, and `channels` (email, and sanitized SMS phone number).
 	* **Admin Deletion:** When contacts are deleted by an administrator, they are processed via the `DELETE` method with the parameter `erase => true` to ensure complete removal.
 * **Bulk Method:** `POST /api/v1/contacts`
@@ -71,7 +71,7 @@ The module automatically configures Yespo's Web Push capabilities through a sequ
 
 ### 6. Order Synchronization (Real-time & Bulk)
 * **Real-time Method:** `POST /api/v1/orders`
-	* **Trigger:** OpenCart event `checkout/order/addOrderHistory/after`.
+	* **Trigger:** OpenCart native event `checkout/order/addOrderHistory/after`.
 	* **Payload:** Object containing `externalOrderId`, `externalCustomerId`, `totalCost`, mapped order status, and an `items` array (`externalItemId`, `name`, `cost`, `quantity`).
 * **Bulk Method:** `POST /api/v1/orders` (Array Payload)
 	* **Trigger:** Historical data is loaded automatically during the module installation.
