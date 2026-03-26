@@ -155,7 +155,7 @@ OpenCart order statuses are dynamically mapped to Yespo statuses based on the st
 5. Go to **Extensions > Modifications** and click the **Refresh** button (top right corner) to rebuild the modifications cache.
 6. Navigate to **Extensions > Extensions**, choose **Modules** from the dropdown list.
 7. Find **Yespo CDP Integration** in the list and click the green **Install** button.
-Detailes can be found here https://docs.yespo.io/docs/integration-with-opencart 
+Details can be found here https://docs.yespo.io/docs/integration-with-opencart 
 
 ---
 
