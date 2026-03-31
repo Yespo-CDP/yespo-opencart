@@ -179,6 +179,186 @@ If you need to remove the module:
 
 ---
 
+# Contributing to Yespo OpenCart Integration
+
+We welcome contributions to the Yespo OpenCart Integration module! Whether you're fixing bugs, improving documentation, or adding new features, your contributions are appreciated.
+
+## 🌿 Branch Structure
+
+This project uses **Git Flow** workflow:
+- **`main`** - Production-ready code, stable releases
+- **`dev`** - Active development branch, all PRs should target this branch
+- **Feature branches** - Created from `dev` for new features or fixes
+
+## 🚀 Quick Start
+
+1. **Fork the Repository**
+   ```bash
+   # Fork on GitHub, then clone your fork
+   git clone git@github.com:ardas/yespo-opencart.git
+   cd yespo-opencart
+   # Switch to development branch
+   git checkout dev
+   ```
+
+2. **Set Up Development Environment**
+   Follow the Installation Guide in [README.md](readme.md) to install the module in your OpenCart development environment.
+
+## 📝 Making Changes
+
+### Branch Naming
+- `feature/description` - for new features
+- `fix/description` - for bug fixes
+- `docs/description` - for documentation updates
+- `refactor/description` - for code refactoring
+
+### Commit Messages
+Follow conventional commits:
+```
+type(scope): description
+
+Example:
+feat(sync): add support for new order status
+fix(ui): resolve display issue in admin panel
+docs(readme): update installation instructions
+```
+
+### Pull Request Process
+
+1. **Create a Feature Branch from `dev`**
+   ```bash
+   git checkout dev
+   git pull origin dev
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make Your Changes**
+    - Follow our [coding standards](#-coding-standards)
+    - Update documentation if needed
+
+3. **Validate Your Changes**
+    - Ensure your code follows OpenCart coding standards.
+    - Test the module in your OpenCart installation (Admin and Catalog).
+    - Ensure `install.xml` (OCMOD) works correctly and doesn't conflict with other extensions.
+
+4. **Submit Pull Request to `dev`**
+    - Push to your fork: `git push origin feature/your-feature-name`
+    - Create a Pull Request **targeting the `dev` branch** with:
+        - **Clear title** describing the change
+        - **Detailed description** explaining:
+            - What problem does this solve?
+            - What changes were made?
+            - How to test the changes?
+        - **Screenshots** for UI changes
+        - **Link to related issues**
+
+## 🔧 Coding Standards
+
+### OpenCart & PHP
+- Follow the official **[OpenCart Coding Standards](http://docs.opencart.com/en-gb/developer/coding-standards/)**.
+- Use **PHP 5.6+** compatible syntax (to maintain compatibility with older OpenCart versions).
+- Follow OpenCart's MVC-L (Model-View-Controller-Language) architecture.
+- Ensure all inputs are sanitized using OpenCart's `$this->db->escape()` or appropriate validation.
+- Use OpenCart's built-in libraries (e.g., `$this->load->model()`, `$this->config->get()`).
+
+### File Organization
+The project follows the standard OpenCart structure:
+```
+src/
+├── install.xml          # OCMOD modification file
+└── upload/
+    ├── admin/           # Admin panel files (Controller, Model, Language, View)
+    ├── catalog/         # Frontend files (Controller, Model, Language, View)
+    └── system/          # Library files and other system-level code
+```
+
+### Code Style
+- Use **Tabs** for indentation (as per OpenCart standards).
+- Follow **PSR-1** and **PSR-2** where it doesn't conflict with OpenCart standards.
+- Use **meaningful names** for variables and functions.
+- Add **proper error handling** and logging using OpenCart's `$this->log->write()`.
+
+## 🐛 Bug Reports
+
+Found a bug? Help us fix it by providing detailed information.
+
+### Before Reporting
+- Check if the issue already exists in GitHub Issues.
+- Make sure you're using the latest version of the module.
+- Try to reproduce the issue consistently.
+
+### Bug Report Template
+Use the GitHub bug report template when creating an issue. It should include steps to reproduce, environment details (OpenCart version, PHP version), and expected vs actual behavior.
+
+## 💡 Feature Requests
+
+Have an idea for improvement? We'd love to hear it!
+
+### Feature Request Template
+Use the GitHub feature request template when suggesting new features. Describe the problem it solves and how you envision the implementation.
+
+## 🔒 Security
+
+### Reporting Security Issues
+**Do not report security vulnerabilities through public GitHub issues.**
+
+Instead, please email us directly at: **support@yespo.io**
+
+Include:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+### Security Guidelines for Contributors
+- **Never commit** API keys, passwords, or secrets.
+- Use **OpenCart configuration/database** for sensitive data, never hardcode.
+- **Validate all inputs** and sanitize user data using OpenCart's security methods.
+- Follow **OWASP security practices**.
+
+## 🤝 Community Guidelines
+
+### Code of Conduct
+- **Be respectful** and inclusive.
+- **Focus on constructive feedback**.
+- **Help newcomers** feel welcome.
+- **Assume good intentions**.
+- **No harassment** or inappropriate behavior.
+
+### Getting Help
+- 📖 Check the [documentation](https://docs.yespo.io/docs/integration-with-opencart)
+- 💬 Ask questions in GitHub Discussions
+- 📧 Contact us at support@yespo.io
+- 🐛 Report bugs through GitHub Issues
+
+## 📊 Issue Management
+
+### 🏷️ Labels We Use
+
+| Label | Description | Used For |
+|-------|-------------|----------|
+| `bug` | Something isn't working | Bug reports |
+| `feature` | New feature request | Feature requests |
+| `enhancement` | Improvement to existing feature | Enhancements |
+| `documentation` | Documentation needs update | Docs updates |
+| `good first issue` | Good for newcomers | Beginner-friendly |
+| `help wanted` | Extra attention needed | Community help |
+| `question` | General questions | Q&A |
+| `priority: critical` | Urgent fix needed | Critical bugs |
+| `priority: high` | Should be fixed soon | Important issues |
+| `priority: medium` | Normal priority | Standard issues |
+| `priority: low` | Can wait | Minor issues |
+| `status: waiting-for-feedback` | Needs more info | Pending response |
+| `status: in-progress` | Being worked on | Active work |
+
+---
+
+Thank you for contributing to Yespo OpenCart Integration! 🙏
+
+Your contributions help make Yespo better for everyone. Whether you're reporting bugs, suggesting features, or contributing code, every bit helps! 💙
+
+---
+
 ## 📄 License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE.txt) file for details.
