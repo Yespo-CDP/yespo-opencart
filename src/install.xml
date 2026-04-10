@@ -53,6 +53,10 @@
 				$this->model_extension_module_yespo->sendCustomerData();
 				$this->session->data['yespo_customer_data'] = true;
 			}
+			if (!empty($this->session->data['yespo_customer_data_event']) && is_array($this->session->data['yespo_customer_data_event'])) {
+				$data['yespo_customer_data'] = "<script>document.addEventListener('DOMContentLoaded', function() {if (typeof eS === 'function') { eS('sendEvent', 'CustomerData', " . json_encode(['CustomerData' => $this->session->data['yespo_customer_data_event']], JSON_UNESCAPED_UNICODE) . "); }})</script>";
+				unset($this->session->data['yespo_customer_data_event']);
+			}
 		}
 		]]></add>
 	</operation>
@@ -64,6 +68,7 @@
 			<?php if (!empty($yespo_site_script)) { echo $yespo_site_script; } ?>
 			<?php if (!empty($yespo_web_push_script)) { echo $yespo_web_push_script; } ?>
 			<?php if (!empty($yespo_event)) { echo $yespo_event; } ?>
+			<?php if (!empty($yespo_customer_data)) { echo $yespo_customer_data; } ?>
 			]]></add>
 		</operation>
 	</file>
@@ -74,6 +79,8 @@
 			{% if yespo_site_script %}{{ yespo_site_script }}{% endif %}
 			{% if yespo_web_push_script %}{{ yespo_web_push_script }}{% endif %}
 			{% if yespo_event %}{{ yespo_event }}{% endif %}
+			{% if yespo_event %}{{ yespo_event }}{% endif %}
+			{% if yespo_customer_data %}{{ yespo_customer_data }}{% endif %}
 			]]></add>
 		</operation>
 	</file>

@@ -94,6 +94,7 @@ class ModelExtensionModuleYespo extends Model {
 				$general_info['externalCustomerId'] = $order_info['customer_id'];
 			}
 		}
+		$this->session->data['yespo_customer_data_event'] = $general_info;
 		$general_info['siteId'] = $this->config->get('yespo_siteid');
 		$general_info['datetime'] = (int)(microtime(true) * 1000);
 		if (!empty($this->request->cookie['sc'])) {
