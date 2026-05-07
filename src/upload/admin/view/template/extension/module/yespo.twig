@@ -183,7 +183,24 @@
 				</div>
 
 			</div>
-			
+			<div class="panel panel-default" id="app-inbox-container" style="display:none;">
+				<div class="panel-body">
+					<div>
+						<h4 class="step-title" style="display: flex; align-items: center;">
+							{{ text_app_inbox }}
+							<span id="badge-app-inbox" class="badge-status {% if yespo_app_inbox == '1' %}enabled{% else %}disabled{% endif %}">
+								{% if yespo_app_inbox == '1' %}{{ text_enabled }}{% else %}{{ text_disabled }}{% endif %}
+							</span>
+						</h4>
+						<p class="text-muted">{{ text_app_inbox_more }}</p>
+					</div>
+					<div>
+						<button type="button" id="btn-app-inbox" class="btn btn-default" data-status="{{ yespo_app_inbox }}">
+							{% if yespo_app_inbox == '1' %}{{ button_disable }}{% else %}{{ button_enable }}{% endif %}
+						</button>
+					</div>
+				</div>
+			</div>
 			<div class="made text-right" style="margin-top: 20px;">{{ text_made }}</div>
 		</div>
 	</div>
@@ -225,6 +242,12 @@
 .stat-row.header { color: #999; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #eee; }
 .stat-row .col-name { width: 150px; font-weight: 500; }
 .stat-row .col-val { width: 120px; text-align: left; }
+#app-inbox-container { margin-top: 20px; border-radius: 3px; border: 1px solid #ddd; box-shadow: none; background: #fff; }
+#app-inbox-container .panel-body { display: flex; justify-content: left; align-items: center; padding: 20px; margin-left: 50px; margin-right: 20px; }
+#app-inbox-container button { padding: 8px 15px; border-radius: 4px; font-size: 16px; box-shadow: 0px 0px 2px 0px rgba(0, 0, 0, 0.25), 0px 2px 4px 0px rgba(0, 0, 0, 0.12); margin-left: 15px; }
+.badge-status { padding: 6px 8px; border-radius: 4px; font-size: 14px; font-weight: 500; margin-left: 10px; line-height: 1; }
+.badge-status.enabled { background-color: #abffc3; color: #0f5132; }
+.badge-status.disabled { background-color: #ffc7d1; color: #842029; }
 </style>
 
 <script type="text/javascript">
@@ -254,6 +277,7 @@ var customersStats = {
 	success: 0, 
 	failed: parseInt('{{ yespo_bad_customers }}'.replace(/\D/g, ''), 10) || 0 
 };
+
 var ordersStats = { 
 	total: parseInt('{{ total_orders_db }}'.replace(/\D/g, ''), 10) || 0, 
 	synced: 0, 
@@ -390,11 +414,12 @@ function startProcesses() {
 	$('#step-tracking').slideDown(0);
 	$('#step-push').slideDown(0);
 	$('#step-import').slideDown(0);
-
+	
 	if (!hasSiteScript) {
 		getSiteScript(1);
 	} else {
 		setStepStatus('step-tracking', 'success');
+		$('#app-inbox-container').slideDown();
 	}
 
 	if (!hasWebPush) {
@@ -549,6 +574,7 @@ function getSiteScript(retryCount) {
 			if (json['success']) {
 				hasSiteScript = true;
 				setStepStatus('step-tracking', 'success');
+				$('#app-inbox-container').slideDown();
 			} else {
 				if (retryCount < maxRetries) {
 					setTimeout(function() { getSiteScript(retryCount + 1); }, 3000);
@@ -750,6 +776,32 @@ $('#step-import .btn-retry-import').on('click', function() {
 		updateImportUI('orders', 'loading');
 		loadOrders(ordersPage);
 	}
+});
+
+$('#btn-app-inbox').on('click', function() {
+	var $btn = $(this);
+	$btn.prop('disabled', true);
+	
+	$.ajax({
+		url: '{{ toggle_app_inbox }}',
+		type: 'post',
+		dataType: 'json',
+		success: function(json) {
+			if (json['success']) {
+				if (json['new_status'] === '1') {
+					$btn.attr('data-status', '1').text('{{ button_disable }}');
+					$('#badge-app-inbox').removeClass('disabled').addClass('enabled').text('{{ text_enabled }}');
+				} else {
+					$btn.attr('data-status', '0').text('{{ button_enable }}');
+					$('#badge-app-inbox').removeClass('enabled').addClass('disabled').text('{{ text_disabled }}');
+				}
+			}
+			$btn.prop('disabled', false);
+		},
+		error: function() {
+			$btn.prop('disabled', false);
+		}
+	});
 });
 </script>
 {{ footer }}

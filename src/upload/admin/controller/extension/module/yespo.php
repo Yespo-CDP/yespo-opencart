@@ -77,15 +77,16 @@ class ControllerExtensionModuleYespo extends Controller {
 	
 	private function getModuleLinks($token, $extension) {
 		return [
-			'action'          => $this->url->link('extension/module/yespo', $token, true),
-			'cancel'          => $this->url->link($extension, $token . '&type=module', true),
-			'check_api_key'   => html_entity_decode($this->url->link('extension/module/yespo/checkApiKey', $token, true)),
-			'load_customers'  => html_entity_decode($this->url->link('extension/module/yespo/loadCustomers', $token, true)),
-			'load_orders'     => html_entity_decode($this->url->link('extension/module/yespo/loadOrders', $token, true)),
-			'get_site_script' => html_entity_decode($this->url->link('extension/module/yespo/getSiteScript', $token, true)),
-			'add_web_push'    => html_entity_decode($this->url->link('extension/module/yespo/addWebPush', $token, true)),
-			'disconnect'      => html_entity_decode($this->url->link('extension/module/yespo/disconnect', $token, true)),
-			'set_active'      => html_entity_decode($this->url->link('extension/module/yespo/setActive', $token, true)),
+			'action'           => $this->url->link('extension/module/yespo', $token, true),
+			'cancel'           => $this->url->link($extension, $token . '&type=module', true),
+			'check_api_key'    => html_entity_decode($this->url->link('extension/module/yespo/checkApiKey', $token, true)),
+			'load_customers'   => html_entity_decode($this->url->link('extension/module/yespo/loadCustomers', $token, true)),
+			'load_orders'      => html_entity_decode($this->url->link('extension/module/yespo/loadOrders', $token, true)),
+			'get_site_script'  => html_entity_decode($this->url->link('extension/module/yespo/getSiteScript', $token, true)),
+			'add_web_push'     => html_entity_decode($this->url->link('extension/module/yespo/addWebPush', $token, true)),
+			'disconnect'       => html_entity_decode($this->url->link('extension/module/yespo/disconnect', $token, true)),
+			'set_active'       => html_entity_decode($this->url->link('extension/module/yespo/setActive', $token, true)),
+			'toggle_app_inbox' => html_entity_decode($this->url->link('extension/module/yespo/toggleAppInbox', $token, true)),
 		];
 	}
 
@@ -97,6 +98,8 @@ class ControllerExtensionModuleYespo extends Controller {
 			'yespo_orgname'          => $this->config->get('yespo_orgname'),
 			'yespo_site_script'      => $this->config->get('yespo_site_script'),
 			'yespo_web_push'         => $this->config->get('yespo_web_push'),
+			'yespo_web_push_script'  => $this->config->get('yespo_web_push_script'),
+			'yespo_app_inbox'        => $this->config->get('yespo_app_inbox') ? $this->config->get('yespo_app_inbox') : 0,
 			'yespo_customers_page'   => $this->config->get('yespo_customers_page') ? $this->config->get('yespo_customers_page') : 1,
 			'yespo_orders_page'      => $this->config->get('yespo_orders_page') ? $this->config->get('yespo_orders_page') : 1,
 			'yespo_customers_loaded' => $this->config->get('yespo_customers_loaded'),
@@ -558,16 +561,49 @@ class ControllerExtensionModuleYespo extends Controller {
 
 	private function logApiEvent($message, $level, $data = [], $org_id = null) {
 		$this->load->model('extension/module/yespo');
+		
 		$log_data = [
 			'data'      => json_encode($data),
 			'message'   => $message,
 			'log_level' => $level,
 		];
+		
 		if ($org_id !== null) {
 			$this->model_extension_module_yespo->makeLogRequest($log_data, $org_id);
 		} else {
 			$this->model_extension_module_yespo->makeLogRequest($log_data);
 		}
+	}
+	
+	public function toggleAppInbox() {
+		$json = ['success' => false];
+		
+		if ($this->request->server['REQUEST_METHOD'] == 'POST' && $this->validate()) {
+			$this->load->model('setting/setting');
+			
+			$current_status = $this->config->get('yespo_app_inbox');
+			
+			if (is_null($current_status)) {
+				$this->db->query("INSERT INTO " . DB_PREFIX . "setting SET store_id = '" . (int)$this->config->get('config_store_id') . "', `code` = 'yespo', `key` = 'yespo_app_inbox', `value` = '0'");
+			}
+			
+			$new_status = $current_status == '1' ? '0' : '1';
+			
+			$this->model_setting_setting->editSettingValue('yespo', 'yespo_app_inbox', $new_status);
+			
+			$domain = $this->request->server['SERVER_NAME'];
+			
+			if ($new_status == '1') {
+				$this->logApiEvent('APP_INBOX_ENABLED', 'INFO', ['domain' => $domain]);
+			} else {
+				$this->logApiEvent('APP_INBOX_DISABLED', 'INFO', ['domain' => $domain]);
+			}
+			
+			$json['success'] = true;
+			$json['new_status'] = $new_status;
+		}
+		
+		$this->respondJson($json);
 	}
 	
 	protected function validate() {
@@ -595,17 +631,23 @@ class ControllerExtensionModuleYespo extends Controller {
 			'yespo_site_script'      => '',
 			'yespo_web_push'         => '',
 			'yespo_web_push_script'  => '',
+			'yespo_app_inbox'        => '0',
 			'yespo_customers_limit'  => 2000,
 			'yespo_orders_limit'     => 300,
 		];
+		
 		$this->model_setting_setting->editSetting('yespo', $setting);
+		
 		if (version_compare(VERSION,'3.0.0.0', '>=')) {
 			$this->model_setting_setting->editSetting('module_yespo', ['module_yespo_status' => 0]);
 		}
+		
 		$events = $this->getYespoEvents();
+		
 		foreach ($events as $code => $value) {
 			$this->addEvent($code, $value['trigger'], $value['action']);
 		}
+		
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "yespo_failed_customers` (`id` INT NOT NULL AUTO_INCREMENT , `customer_id` INT NOT NULL , `attempt_count` TINYINT NOT NULL , `last_attempt` DATETIME NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB;");
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "yespo_failed_orders` (`id` INT NOT NULL AUTO_INCREMENT , `order_id` INT NOT NULL , `attempt_count` TINYINT NOT NULL , `last_attempt` DATETIME NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB;");
 	}
@@ -613,15 +655,19 @@ class ControllerExtensionModuleYespo extends Controller {
 	public function uninstall() {
 		if ($this->user->hasPermission('modify', 'extension/module/yespo')) {
 			$this->load->model('setting/setting');
+			
 			if (version_compare(VERSION,'3.0.0.0', '>=')) {
 				$this->load->model('setting/event');
 			} else {
 				$this->load->model('extension/event');
 			}
+			
 			$this->model_setting_setting->deleteSetting('yespo');
+			
 			if (version_compare(VERSION,'3.0.0.0', '>=')) {
 				$this->model_setting_setting->deleteSetting('module_yespo');
 			}
+			
 			$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "yespo_failed_customers`");
 			$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "yespo_failed_orders`");
 			$events = $this->getYespoEvents();
@@ -649,10 +695,13 @@ class ControllerExtensionModuleYespo extends Controller {
 				'yespo_site_script'      => '',
 				'yespo_web_push'         => '',
 				'yespo_web_push_script'  => '',
+				'yespo_app_inbox'        => '0',
 				'yespo_customers_limit'  => 2000,
 				'yespo_orders_limit'     => 300,
 			];
+			
 			$this->model_setting_setting->editSetting('yespo', $setting);
+			
 			if (version_compare(VERSION, '3.0.0.0', '>=')) {
 				$this->model_setting_setting->editSetting('module_yespo', ['module_yespo_status' => 0]);
 			}
