@@ -1,1 +1,0 @@
-importScripts('https://push-notifications.yespo.io/service-worker.js');
