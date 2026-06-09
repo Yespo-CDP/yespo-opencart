@@ -122,11 +122,13 @@ class ControllerExtensionModuleYespo extends Controller {
 		if ($this->request->server['REQUEST_METHOD'] == 'POST' && $api_key && $this->validate()) {
 			$current_api_key = $this->config->get('yespo_api_key');
 			$request = $this->model_extension_module_yespo->makeRequest([], $this->account_info_url, 'GET', $api_key, true);
+			
 			if (!empty($request['orgId'])) {
 				$this->logApiEvent('ADD_API_KEY_SUCCESS', 'INFO', ['domain' => $this->request->server['SERVER_NAME']], $request['orgId']);
 				$json['success'] = true;
 				$json['org_name'] = $request['organisationName'];
 				$json['orgid'] = $request['orgId'];
+				
 				if ($current_api_key !== $api_key) {
 					$this->resetSettings($api_key, $request['orgId'], $request['organisationName']);
 					$json['reset'] = true;
@@ -303,6 +305,7 @@ class ControllerExtensionModuleYespo extends Controller {
 			$json['next_page'] = false;
 			$this->model_setting_setting->editSettingValue('yespo', 'yespo_customers_loaded', '1');
 		}
+		
 		$json['success'] = true;
 		$json['processed_count'] = count($contacts_payload);
 		$json['failed_count'] = $failed_count;
@@ -371,9 +374,11 @@ class ControllerExtensionModuleYespo extends Controller {
 			}
 			
 			$status = 'INITIALIZED';
+			
 			if (is_array($in_progress_status) && in_array($order['order_status_id'], $in_progress_status)) {
 				$status = 'IN_PROGRESS';
 			}
+			
 			if (is_array($delivered_status) && in_array($order['order_status_id'], $delivered_status)) {
 				$status = 'DELIVERED';
 			}
@@ -416,6 +421,7 @@ class ControllerExtensionModuleYespo extends Controller {
 			} else {
 				$json['error'] = $this->language->get('error_connection');
 			}
+			
 			$this->logApiEvent('SEND_ORDERS_BULK_FAILED', 'ERROR', ['domain' => $this->request->server['SERVER_NAME'], 'responseBody' => $response]);
 			$this->respondJson($json);
 			return;
@@ -433,7 +439,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		$batch_end = ($start + $limit) > $json['total_orders'] ? $json['total_orders'] : ($start + $limit);
 		$batch_range = $start . '-' . $batch_end;
 		
-		$this->logApiEvent('SEND_ORDERS_INFO', 'INFO', ['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'batchRange' => $batch_range, 'responseBody' => $response]);
+		$this->logApiEvent('SEND_ORDERS_BULK_SUCCESS', 'INFO', ['domain' => $this->request->server['SERVER_NAME'], 'requestBody' => $request_body, 'batchRange' => $batch_range, 'responseBody' => $response]);
 		
 		if ($total_in_batch == $limit) {
 			$json['next_page'] = $page + 1;
@@ -516,7 +522,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		
 		if (empty($response['http_code']) || $response['http_code'] != 200) {
 			$json['error'] = true;
-			$this->logApiEvent('ADD_DOMAIN_FAILED', 'ERROR', ['domain' => $domain, 'requestBody' => $request_body, 'responseBody' => $response]);
+			$this->logApiEvent('ADD_WEB_PUSH_DOMAIN_FAILED', 'ERROR', ['domain' => $domain, 'requestBody' => $request_body, 'responseBody' => $response]);
 			$this->respondJson($json);
 			return;
 		}
@@ -547,6 +553,7 @@ class ControllerExtensionModuleYespo extends Controller {
 		$this->load->model('setting/setting');
 		$this->model_setting_setting->editSettingValue('yespo', 'yespo_web_push', '1');
 		$this->model_setting_setting->editSettingValue('yespo', 'yespo_web_push_script', $script_response['script']);
+		
 		$json['success'] = true;
 		
 		$this->logApiEvent('GET_WEB_PUSH_SCRIPT_SUCCESS', 'INFO', ['domain' => $domain]);
@@ -670,7 +677,9 @@ class ControllerExtensionModuleYespo extends Controller {
 			
 			$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "yespo_failed_customers`");
 			$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "yespo_failed_orders`");
+			
 			$events = $this->getYespoEvents();
+			
 			foreach ($events as $code => $value) { 
 				$this->deleteEvent($code);
 			}
@@ -680,6 +689,7 @@ class ControllerExtensionModuleYespo extends Controller {
 	private function resetSettings($api_key, $org_id, $org_name) {
 		if ($this->user->hasPermission('modify', 'extension/module/yespo')) {
 			$this->load->model('setting/setting');
+			
 			$setting = [
 				'yespo_status'           => '0',
 				'yespo_api_key'          => $api_key,

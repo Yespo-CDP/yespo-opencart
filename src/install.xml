@@ -120,7 +120,6 @@
 			{% if yespo_site_script %}{{ yespo_site_script }}{% endif %}
 			{% if yespo_web_push_script %}{{ yespo_web_push_script }}{% endif %}
 			{% if yespo_event %}{{ yespo_event }}{% endif %}
-			{% if yespo_event %}{{ yespo_event }}{% endif %}
 			{% if yespo_customer_data %}{{ yespo_customer_data }}{% endif %}
 			]]></add>
 		</operation>
