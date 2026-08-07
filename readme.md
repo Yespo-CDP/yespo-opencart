@@ -101,15 +101,15 @@ Authorization is performed using the Yespo API Key entered in the plugin setting
 
 ---
 
-# Automated App Inbox Setup
+## Automated App Inbox Setup
 
-## Purpose
+### Purpose
 
 App Inbox extends the Yespo site script with support for personalized messages on the storefront. The OpenCart plugin enables the App Inbox initialization mode and provides the Yespo SDK with an authentication token for the currently logged-in customer.
 
 The plugin does not retrieve or render App Inbox messages itself. Message loading and display are handled by the Yespo site script after initialization.
 
-## Prerequisites
+### Prerequisites
 
 App Inbox becomes available in the module settings after:
 
@@ -117,7 +117,7 @@ App Inbox becomes available in the module settings after:
 * the site domain is registered;
 * the Yespo site tracking script is successfully retrieved.
 
-## Enabling and Disabling App Inbox
+### Enabling and Disabling App Inbox
 
 The administrator can enable or disable App Inbox in the **App Inbox** section of the Yespo module settings.
 
@@ -131,7 +131,7 @@ The switch sends an AJAX `POST` request to the module controller. The controller
 
 App Inbox is disabled by default. Disconnecting or reinstalling the integration resets the setting to the disabled state.
 
-## Storefront Script Initialization
+### Storefront Script Initialization
 
 When App Inbox is disabled, the retrieved Yespo site script is added to the storefront without changing its original initialization call.
 
@@ -158,7 +158,7 @@ The language is derived from the current OpenCart storefront language code and c
 
 The modified script is injected after the opening `<body>` tag through the module's OCMOD modification.
 
-## Customer Authentication Token
+### Customer Authentication Token
 
 When the Yespo SDK calls `getAuthTokenCallback`, the storefront sends a `POST` request to:
 
@@ -180,7 +180,7 @@ The server-to-server request is authenticated using the API key stored in the mo
 
 For guests, failed requests, or responses without a token, the endpoint returns an empty token and the JavaScript callback resolves with an empty string.
 
-## Implementation Notes
+### Implementation Notes
 
 * The API key is used only by the OpenCart backend and is not exposed to storefront JavaScript.
 * A customer token is requested on demand by the Yespo SDK; enabling the option in the admin panel does not generate a token immediately.
